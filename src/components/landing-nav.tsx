@@ -58,14 +58,13 @@ export function LandingNav() {
   return (
     <header className={cn(
         "fixed top-0 left-0 right-0 z-50 px-4 lg:px-6 h-20 flex items-center transition-all duration-300",
-        scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-transparent border-b-transparent"
+        scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-background/80 backdrop-blur-sm border-b border-transparent"
     )}>
       <Link href="/" className="flex items-center justify-center">
         <Shield className="h-7 w-7 text-primary" />
-        <span className={cn(
-            "ml-2 font-headline text-2xl font-semibold",
-            scrolled ? "text-foreground" : "text-primary-foreground"
-        )}>CivicConnect</span>
+        <span className="ml-2 font-headline text-2xl font-semibold text-foreground">
+          CivicConnect
+        </span>
       </Link>
       
       {/* Desktop Nav */}
@@ -75,10 +74,7 @@ export function LandingNav() {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleLinkClick(e, link.href)}
-                className={cn(
-                    "text-sm font-medium underline-offset-4 hover:underline cursor-pointer",
-                    scrolled ? "text-foreground" : "text-primary-foreground"
-                )}
+                className="text-sm font-medium text-foreground underline-offset-4 hover:underline cursor-pointer"
             >
                 {link.label}
             </a>
@@ -87,7 +83,7 @@ export function LandingNav() {
         {isClient ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant={scrolled ? "default" : "secondary"}>
+              <Button>
                 Login <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -101,7 +97,7 @@ export function LandingNav() {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant={scrolled ? "default" : "secondary"} disabled>
+          <Button disabled>
             Login <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
         )}
@@ -112,10 +108,7 @@ export function LandingNav() {
         {isClient ? (
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className={cn(
-                      "hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
-                      scrolled ? "text-foreground hover:text-foreground" : "text-primary-foreground hover:text-primary-foreground hover:bg-white/20"
-                      )}>
+                  <Button variant="ghost" size="icon" className="text-foreground hover:bg-white/20 hover:text-foreground">
                       <Menu className="h-6 w-6" />
                       <span className="sr-only">Open menu</span>
                   </Button>
@@ -143,10 +136,7 @@ export function LandingNav() {
               </SheetContent>
           </Sheet>
         ) : (
-             <Button variant="ghost" size="icon" disabled className={cn(
-                "focus-visible:ring-0 focus-visible:ring-offset-0",
-                scrolled ? "text-foreground" : "text-primary-foreground"
-             )}>
+             <Button variant="ghost" size="icon" disabled className="text-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Open menu</span>
             </Button>
