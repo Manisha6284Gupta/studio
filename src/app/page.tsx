@@ -2,7 +2,7 @@ import { LandingNav } from '@/components/landing-nav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, Shield, FileText, Users, Smile } from 'lucide-react';
+import { ArrowRight, Shield, FileText, Users, Smile, Twitter, Facebook, Linkedin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -133,7 +133,7 @@ export default function Home() {
         </section>
 
         {/* How It Works Section */}
-        <section className="w-full py-16 md:py-24 lg:py-32">
+        <section id="how-it-works" className="w-full py-16 md:py-24 lg:py-32">
             <div className="container px-4 md:px-6">
                  <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                     <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm text-primary font-semibold">Simple Process</div>
@@ -200,22 +200,43 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-         <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <p className="text-sm text-muted-foreground">&copy; 2024 CivicConnect. All rights reserved.</p>
+      <footer className="bg-secondary border-t">
+        <div className="container py-12 px-4 md:px-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="md:col-span-1 space-y-4">
+                    <Link href="/" className="flex items-center gap-2">
+                        <Shield className="h-7 w-7 text-primary" />
+                        <span className="font-headline text-xl font-semibold text-foreground">CivicConnect</span>
+                    </Link>
+                    <p className="text-sm text-muted-foreground">Connecting citizens for a better tomorrow. Report issues, track progress, and build a stronger community.</p>
+                     <div className="flex space-x-4">
+                        <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5" /></Link>
+                        <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5" /></Link>
+                        <Link href="#" className="text-muted-foreground hover:text-primary"><Linkedin className="h-5 w-5" /></Link>
+                    </div>
+                </div>
+                <div className="md:col-start-3">
+                    <h4 className="font-semibold mb-4 text-foreground">Quick Links</h4>
+                    <nav className="flex flex-col space-y-2">
+                        <Link href="#features" className="text-sm text-muted-foreground hover:text-primary hover:underline">Features</Link>
+                        <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-primary hover:underline">How It Works</Link>
+                        <Link href="/register/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Report an Issue</Link>
+                        <Link href="/dashboard/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">My Dashboard</Link>
+                    </nav>
+                </div>
+                <div>
+                    <h4 className="font-semibold mb-4 text-foreground">Legal</h4>
+                    <nav className="flex flex-col space-y-2">
+                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Terms of Service</Link>
+                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Privacy Policy</Link>
+                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Contact Us</Link>
+                    </nav>
+                </div>
+            </div>
+            <div className="mt-8 pt-8 border-t border-border">
+                <p className="text-center text-sm text-muted-foreground">&copy; 2024 CivicConnect. All rights reserved.</p>
+            </div>
         </div>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground">
-            Terms of Service
-          </Link>
-          <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground">
-            Privacy Policy
-          </Link>
-           <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground">
-            Contact Us
-          </Link>
-        </nav>
       </footer>
     </div>
   );
