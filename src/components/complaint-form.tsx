@@ -203,16 +203,11 @@ export function ComplaintForm() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <div className="relative">
                           <Textarea
                             placeholder="Describe the issue in detail, including its impact..."
-                            className="min-h-[150px] pr-10"
+                            className="min-h-[150px]"
                             {...field}
                           />
-                          <Button type="button" variant="ghost" size="icon" className="absolute right-1 bottom-1 h-8 w-8">
-                             <Mic className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
