@@ -16,7 +16,7 @@ import { isSameDay } from "date-fns";
 export default function CitizenComplaintsPage() {
 
     // In a real app, this would be a DB query.
-    const citizenComplaints = mockComplaints.filter(c => c.citizenId === "citizen-123");
+    const citizenComplaints = React.useMemo(() => mockComplaints.filter(c => c.citizenId === "citizen-123"), []);
     const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>(citizenComplaints);
 
     const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; category?: ComplaintCategory | 'all'; date?: Date }) => {
