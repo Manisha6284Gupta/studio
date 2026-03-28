@@ -1,46 +1,62 @@
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+"use client";
+
+import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import type { ComplaintLocation } from "@/lib/types";
-import Image from "next/image";
+import { useMemo } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 interface ComplaintsMapProps {
     locations: ComplaintLocation[];
 }
 
 export function ComplaintsMap({ locations }: ComplaintsMapProps) {
-    const mapImage = PlaceHolderImages.find(p => p.id === 'complaint-map-1');
-    
-    // This is a simplified mapping of lon/lat to pixels.
-    // In a real app, you would use a library to handle map projections.
-    const getPosition = (coords: [number, number]) => {
-        const [lon, lat] = coords;
-        // Example mapping to a 1200x800 image
-        const x = ((lon - (-125)) / ((-65) - (-125))) * 100;
-        const y = ((lat - 24) / (50 - 24)) * 100;
-        return { left: `${x}%`, top: `${y}%`};
-    }
+    const { isLoaded, loadError } = useLoadScript({
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    });
 
-    if (!mapImage) return <div>Map not available.</div>;
+    const center = useMemo(() => ({ lat: 30.9010, lng: 75.8573 }), []);
+
+    const mapContainerStyle = {
+        width: '100%',
+        height: '100%',
+    };
+
+    if (loadError) {
+        return (
+            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border flex items-center justify-center bg-destructive/10 text-destructive">
+                <p>Error loading maps. Please check your API key.</p>
+            </div>
+        );
+    }
+    
+    if (!isLoaded) {
+        return (
+             <Skeleton className="w-full aspect-[4/3] rounded-lg" />
+        );
+    }
 
     return (
         <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border">
-            <Image 
-                src={mapImage.imageUrl}
-                data-ai-hint={mapImage.imageHint}
-                alt="Complaint Locations Map"
-                fill
-                className="object-cover"
-            />
-            {locations.map((location, index) => {
-                 const pos = getPosition(location.coordinates);
-                 return (
-                    <div 
+            <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                zoom={12}
+                center={center}
+                options={{
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                }}
+            >
+                {locations.map((location, index) => (
+                    <MarkerF
                         key={index}
-                        className="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 border-2 border-white"
-                        style={{ left: pos.left, top: pos.top }}
+                        position={{
+                            lat: location.coordinates[1],
+                            lng: location.coordinates[0],
+                        }}
                         title={`Complaint location ${index + 1}`}
                     />
-                 )
-            })}
+                ))}
+            </GoogleMap>
         </div>
-    )
+    );
 }
