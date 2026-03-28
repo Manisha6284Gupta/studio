@@ -51,18 +51,20 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center gap-4">
-                 <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/citizen/complaints">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-3xl font-headline font-bold">Complaint Details</h1>
-                    <p className="text-muted-foreground">Application #{complaint.applicationNumber}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/citizen/complaints">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-headline font-bold">Complaint Details</h1>
+                        <p className="text-muted-foreground">Application #{complaint.applicationNumber}</p>
+                    </div>
                 </div>
-                <div className="ml-auto flex gap-2">
-                    <Button variant="outline"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="w-full sm:w-auto"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
                 </div>
             </div>
 
@@ -84,7 +86,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                                     alt="Complaint Image"
                                     width={400}
                                     height={300}
-                                    className="mt-4 rounded-lg"
+                                    className="mt-4 rounded-lg w-full h-auto max-w-md"
                                 />
                             )}
                         </CardContent>

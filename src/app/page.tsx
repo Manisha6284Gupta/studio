@@ -54,7 +54,7 @@ export default function Home() {
       <LandingNav />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative w-full h-[70vh] flex items-center justify-center text-center text-white">
+        <section className="relative w-full h-[85vh] md:h-[70vh] flex items-center justify-center text-center text-white">
             {heroImage && (
                  <Image
                     src={heroImage.imageUrl}
@@ -70,7 +70,7 @@ export default function Home() {
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
                     Your Voice, Your City, Transformed.
                 </h1>
-                <p className="max-w-[700px] mx-auto text-lg md:text-xl text-gray-200">
+                <p className="max-w-[700px] mx-auto text-base sm:text-lg md:text-xl text-gray-200">
                     CivicConnect is the modern platform for reporting civic issues, tracking their resolution, and fostering a stronger, more connected community.
                 </p>
                 <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center">
@@ -101,7 +101,7 @@ export default function Home() {
                 Our platform is designed to make civic engagement seamless, transparent, and effective for everyone.
               </p>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-none">
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-none">
               {features.map((feature) => {
                 const featureImage = PlaceHolderImages.find(p => p.id === feature.imageId);
                 return (
@@ -156,7 +156,7 @@ export default function Home() {
                              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground mb-4 lg:hidden">
                                 {step.step}
                             </div>
-                            <h3 className="font-headline text-xl font-bold mt-16">{step.title}</h3>
+                            <h3 className="font-headline text-xl font-bold mt-4 lg:mt-16">{step.title}</h3>
                             <p className="mt-2 max-w-xs text-muted-foreground">{step.description}</p>
                         </div>
                     ))}
@@ -184,7 +184,7 @@ export default function Home() {
                 <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl/tight">
                     Ready to Make a Difference?
                 </h2>
-                <p className="mx-auto max-w-[600px] md:text-xl/relaxed">
+                <p className="mx-auto max-w-[600px] text-base md:text-xl/relaxed">
                     Join thousands of other citizens. Create an account and submit your first report today to help build a better tomorrow.
                 </p>
                 </div>

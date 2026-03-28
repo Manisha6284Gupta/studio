@@ -35,19 +35,23 @@ export default function CitizenRegisterPage() {
             Join CivicConnect to help improve your community.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="fullname" placeholder="Full Name" className="pl-10" />
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="fullname">Full Name</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="fullname" placeholder="John Doe" className="pl-10" />
+            </div>
           </div>
 
-          <div className="relative">
+          <div className="space-y-2">
+            <Label>Gender</Label>
             <Select>
               <SelectTrigger className="pl-10">
                  <div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground flex items-center">
                    <Venus className="h-4 w-4" /><Mars className="h-4 w-4" />
                  </div>
-                <SelectValue placeholder="Gender" />
+                <SelectValue placeholder="Select Gender" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="male">Male</SelectItem>
@@ -57,24 +61,36 @@ export default function CitizenRegisterPage() {
             </Select>
           </div>
           
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="phone" type="tel" placeholder="Phone Number" className="pl-10" />
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" className="pl-10" />
+            </div>
           </div>
-
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="email" type="email" placeholder="Email Address" className="pl-10" />
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="email" type="email" placeholder="john.doe@example.com" className="pl-10" />
+            </div>
           </div>
-
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="password" type="password" placeholder="Password" className="pl-10" />
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="password" type="password" placeholder="••••••••" className="pl-10" />
+            </div>
           </div>
-
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="confirm-password" type="password" placeholder="Confirm Password" className="pl-10" />
+          
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="confirm-password" type="password" placeholder="••••••••" className="pl-10" />
+            </div>
           </div>
 
         </CardContent>

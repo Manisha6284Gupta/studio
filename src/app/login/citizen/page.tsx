@@ -28,14 +28,20 @@ export default function CitizenLoginPage() {
             Access your dashboard to submit and track complaints.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="email" type="email" placeholder="Email or Phone" className="pl-10" />
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email or Phone</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="email" type="email" placeholder="john.doe@example.com" className="pl-10" />
+            </div>
           </div>
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input id="password" type="password" placeholder="Password" className="pl-10" />
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="password" type="password" placeholder="••••••••" className="pl-10" />
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <Button variant="link" className="px-0">

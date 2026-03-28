@@ -16,7 +16,7 @@ export default function CitizenDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
                 <div>
                     <h1 className="text-3xl font-headline font-bold">Welcome, John!</h1>
                     <p className="text-muted-foreground">Here&apos;s a summary of your civic engagement.</p>
