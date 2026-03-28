@@ -7,17 +7,17 @@ interface ComplaintStatusBadgeProps {
 }
 
 const statusStyles: Record<ComplaintStatus, string> = {
-  Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "In Progress": "bg-blue-100 text-blue-800 border-blue-200",
-  Resolved: "bg-green-100 text-green-800 border-green-200",
-  Overdue: "bg-red-100 text-red-800 border-red-200",
+  Pending: "bg-warning/20 text-warning-foreground border-warning/30",
+  "In Progress": "bg-primary/20 text-primary border-primary/30",
+  Resolved: "bg-success/20 text-success-foreground border-success/30",
+  Overdue: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 export function ComplaintStatusBadge({ status }: ComplaintStatusBadgeProps) {
   return (
     <Badge
       variant="outline"
-      className={cn("font-semibold", statusStyles[status])}
+      className={cn("font-semibold capitalize", statusStyles[status])}
     >
       {status}
     </Badge>

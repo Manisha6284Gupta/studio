@@ -50,7 +50,7 @@ export function LandingNav() {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant="default">
+          <Button variant="default" disabled>
             Login <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
         )}
