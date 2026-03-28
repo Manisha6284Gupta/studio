@@ -10,9 +10,15 @@ import {
 import { ChevronDown, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export function LandingNav() {
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-background border-b">
@@ -27,21 +33,27 @@ export function LandingNav() {
         >
           Features
         </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="default">
-              Login <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
-              Citizen
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/login/organization')}>
-              Organization
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isClient ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="default">
+                Login <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
+                Citizen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/login/organization')}>
+                Organization
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button variant="default">
+            Login <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </nav>
     </header>
   );
