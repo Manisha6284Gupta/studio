@@ -39,6 +39,10 @@ import { ComplaintCategorizationAndRoutingOutput } from "@/ai/flows/ai-complaint
 const complaintFormSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters."),
   description: z.string().min(25, "Description must be at least 25 characters."),
+  location: z.object({
+    type: z.literal("Point"),
+    coordinates: z.tuple([z.number(), z.number()]),
+  }).optional(),
   category: z.string().min(1, "Please select a category."),
   priority: z.string().min(1, "Please select a priority."),
   severity: z.string().min(1, "Please select a severity."),
@@ -73,7 +77,8 @@ export function ComplaintForm() {
     defaultValues: {
       title: "",
       description: "",
-      tags: ""
+      tags: "",
+      location: undefined,
     },
   })
 
@@ -98,32 +103,37 @@ export function ComplaintForm() {
     const recognition = recognitionRef.current;
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    // Set language based on user's preference or let it auto-detect if possible
+    // For this example, we let it be flexible. Some browsers default to browser language.
+    // recognition.lang = 'en-US'; 
 
     recognition.onstart = () => {
       descriptionBaseText.current = form.getValues("description");
       setIsListening(true);
-      toast({ title: "Listening...", description: "Start speaking to dictate." });
+      toast({ title: "Listening...", description: "Start speaking to dictate. You can speak in Hindi or English." });
     };
 
     recognition.onend = async () => {
       setIsListening(false);
-      const finalTranscript = form.getValues("description");
+      const spokenText = form.getValues("description").replace(descriptionBaseText.current, "").trim();
 
-      if (finalTranscript && finalTranscript !== descriptionBaseText.current) {
+      if (spokenText) {
         setIsTranslating(true);
         toast({ title: "Analyzing and Translating...", description: "Please wait while we process your description." });
         try {
-          const result = await runTranslateText({ text: finalTranscript });
-          form.setValue("description", result.translatedText, { shouldValidate: true });
-          toast({ title: "Translation Complete", description: "Your description has been translated to English." });
+          const result = await runTranslateText({ text: spokenText });
+          const newDescription = (descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ` : "") + result.translatedText;
+          form.setValue("description", newDescription, { shouldValidate: true });
+          toast({ title: "Translation Complete", description: "Your description has been processed and translated to English." });
         } catch (error) {
           console.error("Translation failed:", error);
           toast({
             variant: "destructive",
             title: "Translation Failed",
-            description: "Could not translate your text. Please try again or type in English.",
+            description: "Could not translate your text. Please ensure you are connected to the internet or try typing in English.",
           });
+          // Revert to original text before translation attempt
+          form.setValue("description", (descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ` : "") + spokenText);
         } finally {
           setIsTranslating(false);
         }
@@ -161,7 +171,7 @@ export function ComplaintForm() {
       }
       
       const newText = (descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ` : "") + finalTranscript + interimTranscript;
-      form.setValue("description", newText.trim(), { shouldValidate: true });
+      form.setValue("description", newText.trim(), { shouldValidate: false }); // No validation during dictation
     };
 
     recognition.start();
@@ -211,11 +221,51 @@ export function ComplaintForm() {
 
   function onSubmit(data: ComplaintFormValues) {
     console.log(data)
+    if (!data.location) {
+        toast({
+            variant: "destructive",
+            title: "Location is required",
+            description: "Please set the location for your complaint.",
+        });
+        return;
+    }
     toast({
       title: "Complaint Submitted!",
       description: "Application number #CN-583921 has been generated.",
     })
   }
+
+  const handleSetLocation = () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                form.setValue("location", { type: "Point", coordinates: [longitude, latitude] }, { shouldValidate: true });
+                toast({
+                    title: "Location Set",
+                    description: "Your current location has been captured.",
+                });
+            },
+            (error) => {
+                console.error("Error getting location:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Location Error",
+                    description: "Could not retrieve your location. Please ensure you've granted permission.",
+                });
+            },
+            {
+                enableHighAccuracy: true,
+            }
+        );
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Geolocation Not Supported",
+            description: "Your browser does not support geolocation.",
+        });
+    }
+};
 
   const handleOpenCamera = async () => {
     try {
@@ -277,7 +327,7 @@ export function ComplaintForm() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Card>
@@ -307,7 +357,7 @@ export function ComplaintForm() {
                         <FormControl>
                             <div className="relative">
                               <Textarea
-                                  placeholder="Describe the issue in detail, or use the mic to dictate..."
+                                  placeholder="Describe the issue in detail, or use the mic to dictate in English or Hindi..."
                                   className="min-h-[150px] pr-12"
                                   {...field}
                                   disabled={isTranslating}
@@ -323,7 +373,7 @@ export function ComplaintForm() {
                                       isListening && "text-destructive animate-pulse"
                                   )}
                               >
-                                  {isTranslating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                                  {isTranslating ? <Loader2 className="h-4 w-4 animate-spin" /> : isListening ? <Mic className="h-4 w-4 text-destructive"/> : <Mic className="h-4 w-4" />}
                               </Button>
                             </div>
                         </FormControl>
@@ -341,14 +391,26 @@ export function ComplaintForm() {
                           <CardTitle className="text-xl font-semibold">2. Add Location & Media</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-6">
-                          <FormItem>
-                              <FormLabel>Location</FormLabel>
-                              <Button type="button" variant="outline" className="w-full justify-start text-left font-normal">
-                                  <MapPin className="mr-2 h-4 w-4" />
-                                  Set Location on Map
-                              </Button>
-                              <FormDescription>Pinpoint the exact location of the issue.</FormDescription>
-                          </FormItem>
+                            <FormField
+                                control={form.control}
+                                name="location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Location</FormLabel>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="w-full justify-start text-left font-normal"
+                                                onClick={handleSetLocation}
+                                            >
+                                                <MapPin className="mr-2 h-4 w-4" />
+                                                {field.value ? `Location Set: ${field.value.coordinates[1].toFixed(4)}, ${field.value.coordinates[0].toFixed(4)}` : "Use My Current Location"}
+                                            </Button>
+                                        <FormDescription>Uses your device's GPS to pinpoint the exact location.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                           <FormItem>
                               <FormLabel>Attach Media</FormLabel>
                               <div className={cn("w-full", capturedImage ? "hidden" : "grid grid-cols-1 sm:grid-cols-2 gap-4")}>
@@ -560,3 +622,5 @@ export function ComplaintForm() {
     </div>
   )
 }
+
+    
