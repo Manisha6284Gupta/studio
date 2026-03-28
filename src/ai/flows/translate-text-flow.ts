@@ -1,0 +1,50 @@
+'use server';
+/**
+ * @fileOverview A Genkit flow for translating text into English.
+ *
+ * - translateTextToEnglish - A function that handles the translation.
+ * - TranslateTextInput - The input type for the translation function.
+ * - TranslateTextOutput - The return type for the translation function.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+
+const TranslateTextInputSchema = z.object({
+  text: z.string().describe('The text to translate.'),
+});
+export type TranslateTextInput = z.infer<typeof TranslateTextInputSchema>;
+
+const TranslateTextOutputSchema = z.object({
+  translatedText: z.string().describe('The translated English text.'),
+});
+export type TranslateTextOutput = z.infer<typeof TranslateTextOutputSchema>;
+
+export async function translateTextToEnglish(input: TranslateTextInput): Promise<TranslateTextOutput> {
+  return translateTextFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'translateToEnglishPrompt',
+  input: { schema: TranslateTextInputSchema },
+  output: { schema: TranslateTextOutputSchema },
+  prompt: `You are a translation expert. The user will provide text in some language.
+Your task is to translate this text into English. If the text is already in English, simply return the original text.
+Only return the translated English text.
+
+Text to translate:
+{{{text}}}
+`,
+});
+
+const translateTextFlow = ai.defineFlow(
+  {
+    name: 'translateTextFlow',
+    inputSchema: TranslateTextInputSchema,
+    outputSchema: TranslateTextOutputSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input);
+    return output!;
+  }
+);
