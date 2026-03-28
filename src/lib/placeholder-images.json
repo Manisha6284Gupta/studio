@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image-1",
+      "description": "A vibrant community gathering in a city park.",
+      "imageUrl": "https://picsum.photos/seed/hero/600/600",
+      "imageHint": "community park"
+    },
+    {
+      "id": "complaint-map-1",
+      "description": "An overhead view of a city map with streets and buildings.",
+      "imageUrl": "https://picsum.photos/seed/citymap/1200/800",
+      "imageHint": "city map"
+    },
+    {
+      "id": "complaint-image-1",
+      "description": "A pothole on a city street.",
+      "imageUrl": "https://picsum.photos/seed/pothole/400/300",
+      "imageHint": "pothole road"
+    }
+  ]
 }
