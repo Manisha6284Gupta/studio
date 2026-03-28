@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -56,6 +56,17 @@ export function ComplaintForm() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const descriptionBaseText = useRef<string>("");
+
+  useEffect(() => {
+    // Cleanup speech recognition on component unmount
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
   const form = useForm<ComplaintFormValues>({
     resolver: zodResolver(complaintFormSchema),
     defaultValues: {
@@ -64,6 +75,69 @@ export function ComplaintForm() {
       tags: ""
     },
   })
+
+  const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      toast({
+        variant: "destructive",
+        title: "Not Supported",
+        description: "Your browser does not support speech recognition.",
+      });
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    recognitionRef.current = new SpeechRecognition();
+    const recognition = recognitionRef.current;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      descriptionBaseText.current = form.getValues("description");
+      setIsListening(true);
+      toast({ title: "Listening...", description: "Start speaking to dictate." });
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      if (event.error === 'not-allowed') {
+        toast({
+          variant: "destructive",
+          title: "Microphone Permission Denied",
+          description: "Please allow microphone access in your browser settings.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Speech Recognition Error",
+          description: "An error occurred. Please try again.",
+        });
+      }
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0])
+        .map((result) => result.transcript)
+        .join("");
+      
+      const newText = descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ${transcript}` : transcript;
+      form.setValue("description", newText.trim(), { shouldValidate: true });
+    };
+
+    recognition.start();
+  }
 
   const handleAiAnalysis = async () => {
     const title = form.getValues("title")
@@ -203,11 +277,25 @@ export function ComplaintForm() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                          <Textarea
-                            placeholder="Describe the issue in detail, including its impact..."
-                            className="min-h-[150px]"
-                            {...field}
-                          />
+                          <div className="relative">
+                            <Textarea
+                                placeholder="Describe the issue in detail, or use the mic to dictate..."
+                                className="min-h-[150px] pr-12"
+                                {...field}
+                            />
+                            <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={handleMicClick}
+                                className={cn(
+                                    "absolute right-2 top-2 h-8 w-8 text-muted-foreground hover:text-foreground", 
+                                    isListening && "text-destructive animate-pulse"
+                                )}
+                            >
+                                <Mic className="h-4 w-4" />
+                            </Button>
+                          </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
