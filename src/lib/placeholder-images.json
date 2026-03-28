@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image-1",
-      "description": "A vibrant community gathering in a city park.",
-      "imageUrl": "https://picsum.photos/seed/hero/600/600",
-      "imageHint": "community park"
+      "description": "A modern, abstract image representing connection or city life.",
+      "imageUrl": "https://picsum.photos/seed/hero2/1200/800",
+      "imageHint": "modern cityscape"
     },
     {
       "id": "complaint-map-1",
@@ -17,6 +17,30 @@
       "description": "A pothole on a city street.",
       "imageUrl": "https://picsum.photos/seed/pothole/400/300",
       "imageHint": "pothole road"
+    },
+    {
+      "id": "feature-1",
+      "description": "A person using a smartphone to report an issue.",
+      "imageUrl": "https://picsum.photos/seed/feat1/500/500",
+      "imageHint": "smartphone report"
+    },
+    {
+      "id": "feature-2",
+      "description": "A city worker in a helmet looking at a tablet.",
+      "imageUrl": "https://picsum.photos/seed/feat2/500/500",
+      "imageHint": "city worker"
+    },
+    {
+      "id": "feature-3",
+      "description": "A checkmark icon over a resolved city issue like a fixed streetlight.",
+      "imageUrl": "https://picsum.photos/seed/feat3/500/500",
+      "imageHint": "issue resolved"
+    },
+    {
+      "id": "cta-background",
+      "description": "A beautiful view of a city at sunset.",
+      "imageUrl": "https://picsum.photos/seed/ctabg/1600/900",
+      "imageHint": "city sunset"
     }
   ]
 }
