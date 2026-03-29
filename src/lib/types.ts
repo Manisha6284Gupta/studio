@@ -1,7 +1,7 @@
 export type ComplaintStatus = "Pending" | "In Progress" | "Resolved" | "Overdue";
 export type ComplaintPriority = "Low" | "Medium" | "High";
 export type ComplaintSeverity = "Critical" | "High" | "Medium" | "Low";
-export type ComplaintCategory = "Infrastructure" | "Utility" | "Health" | "Environment" | "Other";
+export type ComplaintCategory = "Infrastructure" | "Utility" | "Health" | "Environment" | "Water Department" | "Road Department" | "Electricity" | "Other";
 export type ResolutionActionType = "Repair" | "Replacement" | "Investigation" | "Clearance" | "Monitoring" | "Other";
 
 export interface ComplaintLocation {

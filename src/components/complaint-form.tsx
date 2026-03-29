@@ -94,48 +94,43 @@ export function ComplaintForm() {
   }, []);
   
   useEffect(() => {
-    // We only want to run this when the camera dialog is open.
     if (!isCameraOpen) {
-        // Also, if there's a stream, stop it when the dialog closes.
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-        return;
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      return;
     }
 
-    let isCancelled = false;
-
     const getCameraPermission = async () => {
-        try {
-            const constraints = cameraMode === 'video' ? { video: true, audio: true } : { video: true };
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            if (!isCancelled) {
-                setHasCameraPermission(true);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            }
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            if (!isCancelled) {
-                setHasCameraPermission(false);
-                toast({
-                    variant: 'destructive',
-                    title: 'Camera Access Denied',
-                    description: 'Please enable camera permissions in your browser settings to use this app.',
-                });
-            }
+      try {
+        const constraints = cameraMode === 'video' ? { video: true, audio: true } : { video: true };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
     };
 
     getCameraPermission();
-
+    
     return () => {
-        isCancelled = true;
-        // The stream is stopped when isCameraOpen becomes false at the top of the effect.
-    };
+        if (videoRef.current?.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
 }, [isCameraOpen, cameraMode, toast]);
 
 
@@ -296,7 +291,7 @@ export function ComplaintForm() {
             toast({
                 variant: "destructive",
                 title: "Configuration Error",
-                description: "Google Maps API key is not configured.",
+                description: "Google Maps API key is not configured. Please add it to your .env file.",
             });
             return;
         }
@@ -368,25 +363,26 @@ export function ComplaintForm() {
     const handleOpenCamera = (mode: 'photo' | 'video') => {
         setMediaFile(null);
         setHasCameraPermission(null);
+        setCapturedImage(null);
+        setRecordedVideoUrl(null);
         setCameraMode(mode);
         setIsCameraOpen(true);
     };
 
     const handleCloseCamera = () => {
-        setCapturedImage(null);
-        if (recordedVideoUrl) {
-            URL.revokeObjectURL(recordedVideoUrl);
-            setRecordedVideoUrl(null);
-        }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
         }
-        recordedChunksRef.current = [];
         setIsRecording(false);
+        setCapturedImage(null);
+        if (recordedVideoUrl) {
+          URL.revokeObjectURL(recordedVideoUrl);
+          setRecordedVideoUrl(null);
+        }
+        recordedChunksRef.current = [];
         setIsCameraOpen(false);
     };
     
-    // Photo capture functions
     const handleCapture = () => {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
@@ -414,7 +410,6 @@ export function ComplaintForm() {
         setCapturedImage(null);
     };
 
-    // Video recording functions
     const handleStartRecording = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
@@ -477,6 +472,7 @@ export function ComplaintForm() {
             URL.revokeObjectURL(recordedVideoUrl);
         }
         setRecordedVideoUrl(null);
+        recordedChunksRef.current = [];
     };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -666,11 +662,14 @@ export function ComplaintForm() {
                                   </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                  <SelectItem value="Infrastructure">Infrastructure</SelectItem>
-                                  <SelectItem value="Utility">Utility</SelectItem>
-                                  <SelectItem value="Health">Health</SelectItem>
-                                  <SelectItem value="Environment">Environment</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
+                                    <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                                    <SelectItem value="Utility">Utility</SelectItem>
+                                    <SelectItem value="Health">Health</SelectItem>
+                                    <SelectItem value="Environment">Environment</SelectItem>
+                                    <SelectItem value="Water Department">Water Department</SelectItem>
+                                    <SelectItem value="Road Department">Road Department</SelectItem>
+                                    <SelectItem value="Electricity">Electricity</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
                                   </SelectContent>
                               </Select>
                               <FormMessage />
@@ -723,19 +722,26 @@ export function ComplaintForm() {
                         <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>
                    ) : hasCameraPermission === false ? (
                         <AlertDialogDescription>Please grant camera permissions to continue.</AlertDialogDescription>
+                   ) : hasCameraPermission === null ? (
+                        <AlertDialogDescription>Waiting for camera permission...</AlertDialogDescription>
                    ) : null}
               </AlertDialogHeader>
               <div className="relative bg-black rounded-lg overflow-hidden border flex items-center justify-center min-h-[300px]">
                 <video
                     ref={videoRef}
                     className={cn(
-                        "w-full aspect-video",
+                        "w-full h-auto",
                         (capturedImage || recordedVideoUrl || !hasCameraPermission) && "hidden"
                     )}
                     autoPlay
                     muted
                     playsInline
                 />
+                
+                {hasCameraPermission && !isRecording && (
+                    <video ref={videoRef} className="w-full aspect-video" autoPlay muted />
+                )}
+
 
                 {capturedImage && (
                     <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
@@ -753,11 +759,12 @@ export function ComplaintForm() {
                 )}
                 
                 {hasCameraPermission === false && (
-                    <div className="text-center text-destructive-foreground p-4">
-                        <Camera className="h-12 w-12 mx-auto mb-2" />
-                        <p className="font-semibold">Camera Access Required</p>
-                        <p className="text-sm">Please allow camera access to use this feature.</p>
-                    </div>
+                     <Alert variant="destructive">
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                            Please allow camera access to use this feature.
+                        </AlertDescription>
+                    </Alert>
                 )}
 
                 {hasCameraPermission === null && (
@@ -766,8 +773,13 @@ export function ComplaintForm() {
                         <p>Waiting for camera...</p>
                     </div>
                 )}
-
-                {isRecording && <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>}
+                
+                 {isRecording && (
+                    <>
+                        <video ref={videoRef} className="w-full aspect-video" autoPlay muted />
+                        <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>
+                    </>
+                )}
               </div>
               <AlertDialogFooter>
                     {cameraMode === 'photo' ? (

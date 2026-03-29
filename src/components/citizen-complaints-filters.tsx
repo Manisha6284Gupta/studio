@@ -51,6 +51,9 @@ export function CitizenComplaintsFilters({ onFilterChange }: CitizenComplaintsFi
                     <SelectItem value="Utility">Utility</SelectItem>
                     <SelectItem value="Health">Health</SelectItem>
                     <SelectItem value="Environment">Environment</SelectItem>
+                    <SelectItem value="Water Department">Water Department</SelectItem>
+                    <SelectItem value="Road Department">Road Department</SelectItem>
+                    <SelectItem value="Electricity">Electricity</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
             </Select>

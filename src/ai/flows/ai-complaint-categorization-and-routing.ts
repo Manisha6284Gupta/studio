@@ -20,7 +20,7 @@ const ComplaintCategorizationAndRoutingInputSchema = z.object({
 export type ComplaintCategorizationAndRoutingInput = z.infer<typeof ComplaintCategorizationAndRoutingInputSchema>;
 
 const ComplaintCategorizationAndRoutingOutputSchema = z.object({
-  category: z.enum(["Infrastructure", "Utility", "Health", "Environment", "Other"]).describe('The category of the complaint.'),
+  category: z.enum(["Infrastructure", "Utility", "Health", "Environment", "Water Department", "Road Department", "Electricity", "Other"]).describe('The category of the complaint.'),
   tags: z.array(z.string()).describe('A list of relevant keywords or tags for the complaint.'),
   recommendedDepartmentNames: z.array(z.string()).describe('A list of recommended departments or agencies that should handle this complaint.'),
   priority: z.enum(["Low", "Medium", "High"]).describe('The urgency of the complaint, indicating how quickly it needs attention.'),
@@ -47,7 +47,7 @@ Photo: {{media url=photoDataUri}}
 {{/if}}
 
 Based on the provided title, description, and image (if available), perform the following:
-1.  **Categorize** the complaint into one of the following types: Infrastructure, Utility, Health, Environment, Other.
+1.  **Categorize** the complaint into one of the following types: Infrastructure, Utility, Health, Environment, Water Department, Road Department, Electricity, Other.
 2.  Suggest a list of **tags** (keywords) that accurately describe the complaint. These should be concise and relevant.
 3.  Recommend the **department(s)** or agencies best suited to handle this complaint. Provide a concise name for each department.
 4.  Determine the **priority** (Low, Medium, High) of the complaint.
