@@ -34,7 +34,9 @@ export default function SettingsPage() {
 
     const handleSaveChanges = () => {
         // In a real app, you would call an API to save the user data
-        console.log("Saving user data:", user);
+        const updatedUser = { ...user, avatar: avatarPreview || user.avatar };
+        setUser(updatedUser);
+        console.log("Saving user data:", updatedUser);
         toast({
             title: "Profile Updated",
             description: "Your profile information has been successfully saved.",
