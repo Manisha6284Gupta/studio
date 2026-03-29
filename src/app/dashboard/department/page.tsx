@@ -51,9 +51,10 @@ export default function DepartmentDashboardPage() {
     const departmentId = staffProfile?.departmentId;
 
     const complaintsQuery = useMemoFirebase(() => {
-        if (!departmentId) return null;
+        // Only fetch after we have a department ID and staff profile is loaded
+        if (isStaffLoading || !departmentId) return null;
         return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', departmentId));
-    }, [firestore, departmentId]);
+    }, [firestore, departmentId, isStaffLoading]);
 
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
     
@@ -88,9 +89,9 @@ export default function DepartmentDashboardPage() {
     
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
 
-    const isLoading = isUserLoading || isStaffLoading || (staffProfile && isComplaintsLoading);
+    const isLoading = isUserLoading || isStaffLoading;
 
-    // If a regular user (not staff) lands here, show an access denied message.
+    // If role check is done and user is not staff, show access denied.
     if (!isLoading && !staffProfile) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -107,7 +108,7 @@ export default function DepartmentDashboardPage() {
         );
     }
     
-    if (isLoading) {
+    if (isLoading || (staffProfile && isComplaintsLoading)) {
         return <PageSkeleton />;
     }
 

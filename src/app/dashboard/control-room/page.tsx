@@ -56,10 +56,10 @@ export default function ControlRoomDashboardPage() {
     const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc(controlRoomStaffRef);
 
     const complaintsQuery = useMemoFirebase(() => {
-        // Only fetch if the user is a control room staff member
-        if (!controlRoomStaff) return null;
+        // Only fetch if the user role check is complete and they are control room staff.
+        if (isRoleLoading || !controlRoomStaff) return null;
         return query(collection(firestore, 'complaints'));
-    }, [firestore, controlRoomStaff]);
+    }, [firestore, controlRoomStaff, isRoleLoading]);
     
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
 
@@ -68,10 +68,10 @@ export default function ControlRoomDashboardPage() {
         return rawComplaints.map(c => ({ ...c, _id: c.id } as Complaint));
     }, [rawComplaints]);
 
-    const isLoading = isUserLoading || isRoleLoading || (controlRoomStaff && isComplaintsLoading);
+    const isLoading = isUserLoading || isRoleLoading;
 
-    // If a regular user (not control room staff) lands here, show an access denied message.
-    if (!isLoading && !controlRoomStaff) {
+    // If role check is done and user is not control room staff, show access denied.
+    if (!isUserLoading && !isRoleLoading && !controlRoomStaff) {
         return (
             <div className="flex h-full items-center justify-center">
                 <Card className="w-full max-w-md text-center">
@@ -88,7 +88,7 @@ export default function ControlRoomDashboardPage() {
     }
     
     const stats = React.useMemo(() => {
-        if (isLoading || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        if (isLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
         return {
             total: complaints.length,
             resolved: complaints.filter(c => c.status === 'Resolved').length,
@@ -99,7 +99,7 @@ export default function ControlRoomDashboardPage() {
 
     const locations = React.useMemo(() => complaints.map(c => c.location).filter(Boolean), [complaints]);
     
-    if (isLoading) {
+    if (isLoading || (controlRoomStaff && isComplaintsLoading)) {
         return <PageSkeleton />;
     }
 
