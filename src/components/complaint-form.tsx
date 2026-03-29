@@ -35,6 +35,7 @@ import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { runCategorizeComplaint, runTranslateText } from "@/lib/actions"
 import { ComplaintCategorizationAndRoutingOutput } from "@/ai/flows/ai-complaint-categorization-and-routing"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 const complaintFormSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters."),
@@ -44,9 +45,6 @@ const complaintFormSchema = z.object({
     coordinates: z.tuple([z.number(), z.number()]),
   }).optional(),
   category: z.string().min(1, "Please select a category."),
-  priority: z.string().min(1, "Please select a priority."),
-  severity: z.string().min(1, "Please select a severity."),
-  deadline: z.date().optional(),
   tags: z.string().optional(),
 })
 
@@ -64,6 +62,7 @@ export function ComplaintForm() {
   const [isRecording, setIsRecording] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -95,35 +94,49 @@ export function ComplaintForm() {
   }, []);
   
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    const setupStream = async () => {
-        if (!isCameraOpen || !videoRef.current) return;
+    // We only want to run this when the camera dialog is open.
+    if (!isCameraOpen) {
+        // Also, if there's a stream, stop it when the dialog closes.
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        return;
+    }
+
+    let isCancelled = false;
+
+    const getCameraPermission = async () => {
         try {
-            const constraints = cameraMode === 'video'
-                ? { video: true, audio: true }
-                : { video: true };
-            stream = await navigator.mediaDevices.getUserMedia(constraints);
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
+            const constraints = cameraMode === 'video' ? { video: true, audio: true } : { video: true };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (!isCancelled) {
+                setHasCameraPermission(true);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
             }
         } catch (error) {
-            console.error('Error accessing camera/mic:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Permission Denied',
-                description: 'Please enable camera and/or microphone permissions in your browser settings.',
-            });
-            setIsCameraOpen(false);
+            console.error('Error accessing camera:', error);
+            if (!isCancelled) {
+                setHasCameraPermission(false);
+                toast({
+                    variant: 'destructive',
+                    title: 'Camera Access Denied',
+                    description: 'Please enable camera permissions in your browser settings to use this app.',
+                });
+            }
         }
     };
-    setupStream();
+
+    getCameraPermission();
+
     return () => {
-      stream?.getTracks().forEach(track => track.stop());
-      if (videoRef.current) {
-          videoRef.current.srcObject = null;
-      }
+        isCancelled = true;
+        // The stream is stopped when isCameraOpen becomes false at the top of the effect.
     };
-  }, [isCameraOpen, cameraMode, toast]);
+}, [isCameraOpen, cameraMode, toast]);
 
 
   const handleMicClick = () => {
@@ -240,13 +253,8 @@ export function ComplaintForm() {
       const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
       
       form.setValue("category", result.category, { shouldValidate: true });
-      form.setValue("priority", result.priority, { shouldValidate: true });
-      form.setValue("severity", result.severity, { shouldValidate: true });
       form.setValue("tags", result.tags.join(", "), { shouldValidate: true });
-      if (result.deadline) {
-        form.setValue("deadline", new Date(result.deadline), { shouldValidate: true });
-      }
-
+      
       toast({
         title: "AI Analysis Complete",
         description: "We've pre-filled the form with our suggestions.",
@@ -359,6 +367,7 @@ export function ComplaintForm() {
 
     const handleOpenCamera = (mode: 'photo' | 'video') => {
         setMediaFile(null);
+        setHasCameraPermission(null);
         setCameraMode(mode);
         setIsCameraOpen(true);
     };
@@ -369,6 +378,10 @@ export function ComplaintForm() {
             URL.revokeObjectURL(recordedVideoUrl);
             setRecordedVideoUrl(null);
         }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        recordedChunksRef.current = [];
         setIsRecording(false);
         setIsCameraOpen(false);
     };
@@ -666,92 +679,6 @@ export function ComplaintForm() {
                           />
                           <FormField
                           control={form.control}
-                          name="priority"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Priority</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="AI will suggest a priority" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                  <SelectItem value="Low">Low</SelectItem>
-                                  <SelectItem value="Medium">Medium</SelectItem>
-                                  <SelectItem value="High">High</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                          <FormField
-                          control={form.control}
-                          name="severity"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Severity</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="AI will suggest a severity" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                      <SelectItem value="Low">Low</SelectItem>
-                                      <SelectItem value="Medium">Medium</SelectItem>
-                                      <SelectItem value="High">High</SelectItem>
-                                      <SelectItem value="Critical">Critical</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                          <FormField
-                          control={form.control}
-                          name="deadline"
-                          render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                              <FormLabel>Suggested Deadline</FormLabel>
-                              <Popover>
-                                  <PopoverTrigger asChild>
-                                  <FormControl>
-                                      <Button
-                                      variant={"outline"}
-                                      className={cn(
-                                          "w-full pl-3 text-left font-normal",
-                                          !field.value && "text-muted-foreground"
-                                      )}
-                                      >
-                                      {field.value ? (
-                                          format(field.value, "PPP")
-                                      ) : (
-                                          <span>AI will suggest a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                  </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={field.onChange}
-                                      disabled={(date) =>
-                                      date < new Date() || date < new Date("1900-01-01")
-                                      }
-                                      initialFocus
-                                  />
-                                  </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                          <FormField
-                          control={form.control}
                           name="tags"
                           render={({ field }) => (
                               <FormItem>
@@ -792,38 +719,54 @@ export function ComplaintForm() {
                   <AlertDialogTitle>
                       {cameraMode === 'photo' ? 'Live Camera' : 'Record Video'}
                   </AlertDialogTitle>
-                   {(capturedImage || recordedVideoUrl) && <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>}
+                   {(capturedImage || recordedVideoUrl) ? (
+                        <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>
+                   ) : hasCameraPermission === false ? (
+                        <AlertDialogDescription>Please grant camera permissions to continue.</AlertDialogDescription>
+                   ) : null}
               </AlertDialogHeader>
-              <div className="relative bg-black rounded-lg overflow-hidden border">
-                {capturedImage ? (
+              <div className="relative bg-black rounded-lg overflow-hidden border flex items-center justify-center min-h-[300px]">
+                <video
+                    ref={videoRef}
+                    className={cn(
+                        "w-full aspect-video",
+                        (capturedImage || recordedVideoUrl || !hasCameraPermission) && "hidden"
+                    )}
+                    autoPlay
+                    muted
+                    playsInline
+                />
+
+                {capturedImage && (
                     <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
-                ) : (
-                    <>
-                        <video
-                            ref={videoRef}
-                            className={cn(
-                                "w-full aspect-video",
-                                recordedVideoUrl && "hidden"
-                            )}
-                            autoPlay
-                            muted
-                            playsInline
-                        />
-                        {recordedVideoUrl && (
-                            <video
-                                src={recordedVideoUrl}
-                                className={cn(
-                                    "w-full aspect-video",
-                                    !recordedVideoUrl && "hidden"
-                                )}
-                                controls
-                                autoPlay
-                                muted
-                                playsInline
-                            />
-                        )}
-                    </>
                 )}
+
+                {recordedVideoUrl && (
+                    <video
+                        src={recordedVideoUrl}
+                        className="w-full aspect-video"
+                        controls
+                        autoPlay
+                        muted
+                        playsInline
+                    />
+                )}
+                
+                {hasCameraPermission === false && (
+                    <div className="text-center text-destructive-foreground p-4">
+                        <Camera className="h-12 w-12 mx-auto mb-2" />
+                        <p className="font-semibold">Camera Access Required</p>
+                        <p className="text-sm">Please allow camera access to use this feature.</p>
+                    </div>
+                )}
+
+                {hasCameraPermission === null && (
+                    <div className="text-center text-muted-foreground p-4">
+                        <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                        <p>Waiting for camera...</p>
+                    </div>
+                )}
+
                 {isRecording && <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>}
               </div>
               <AlertDialogFooter>
@@ -836,7 +779,7 @@ export function ComplaintForm() {
                         ) : (
                             <>
                                 <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleCapture}>Capture Photo</AlertDialogAction>
+                                <AlertDialogAction onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</AlertDialogAction>
                             </>
                         )
                     ) : ( // video mode
@@ -852,7 +795,7 @@ export function ComplaintForm() {
                         ) : (
                             <>
                                 <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleStartRecording}>Start Recording</AlertDialogAction>
+                                <AlertDialogAction onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</AlertDialogAction>
                             </>
                         )
                     )}
