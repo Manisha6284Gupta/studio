@@ -103,7 +103,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Application #</TableHead>
+              <TableHead>Application </TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted</TableHead>
