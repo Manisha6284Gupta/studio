@@ -43,15 +43,15 @@ export default function DepartmentDashboardPage() {
                     <ComplaintsMap locations={locations} />
                 </CardContent>
             </Card>
+            
+            <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+
             <div className="px-4 sm:px-6 lg:px-8">
-                <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-                <div className="mt-4">
-                    <Card>
-                        <CardContent className="p-0">
-                            <ComplaintsTable complaints={filteredComplaints} />
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card>
+                    <CardContent className="p-0">
+                        <ComplaintsTable complaints={filteredComplaints} />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )

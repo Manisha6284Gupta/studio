@@ -31,7 +31,7 @@ export function DepartmentComplaintsFilters({ onFilterChange }: DepartmentCompla
     }
 
     return (
-        <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col gap-4 border-y bg-card p-4 sm:flex-row sm:flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
