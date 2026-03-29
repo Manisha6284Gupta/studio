@@ -32,8 +32,8 @@ export default function ControlRoomDashboardPage() {
                     <div className="lg:col-span-3">
                         <Card>
                             <CardHeader>
-                                <CardTitle>All Complaints</CardTitle>
-                                <CardDescription>
+                                <CardTitle className="text-xl">All Complaints</CardTitle>
+                                <CardDescription className="text-xs">
                                     Filter, search, and manage all submitted complaints.
                                 </CardDescription>
                             </CardHeader>
