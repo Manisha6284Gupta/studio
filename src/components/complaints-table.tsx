@@ -65,21 +65,28 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
                       <Eye className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>
-                    {view === 'department' ? (
+                    {view === 'citizen' && (
+                      <>
+                        <DropdownMenuItem>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {view === 'department' && (
                       <DropdownMenuItem>
                         <Send className="mr-2 h-4 w-4" />
                         Send Back
                       </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
                     )}
-                    {view !== 'department' && (
-                       <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                    {view === 'control-room' && (
+                      <DropdownMenuItem>
+                        <Send className="mr-2 h-4 w-4" />
+                        Reassign
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>

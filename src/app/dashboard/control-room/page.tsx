@@ -40,7 +40,7 @@ export default function ControlRoomDashboardPage() {
                             <CardContent className="px-4 sm:px-6 lg:px-8">
                                 <ComplaintsFilters />
                             </CardContent>
-                            <ComplaintsTable complaints={mockComplaints} />
+                            <ComplaintsTable complaints={mockComplaints} view="control-room" />
                         </Card>
                     </div>
                     <div className="lg:col-span-2">
