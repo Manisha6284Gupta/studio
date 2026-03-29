@@ -40,7 +40,8 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 import { useUser, useFirestore, errorEmitter } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import type { Complaint } from "@/lib/types"
 
 const complaintFormSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters."),
@@ -59,7 +60,11 @@ const complaintFormSchema = z.object({
 
 type ComplaintFormValues = z.infer<typeof complaintFormSchema>
 
-export function ComplaintForm() {
+interface ComplaintFormProps {
+    complaint?: Complaint;
+}
+
+export function ComplaintForm({ complaint }: ComplaintFormProps) {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -93,13 +98,15 @@ export function ComplaintForm() {
   const form = useForm<ComplaintFormValues>({
     resolver: zodResolver(complaintFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      tags: "",
-      location: undefined,
-      category: "",
-      priority: "",
-      severity: "",
+      title: complaint?.title || "",
+      description: complaint?.description || "",
+      tags: complaint?.tags.join(", ") || "",
+      location: complaint?.location || undefined,
+      category: complaint?.category || "",
+      priority: complaint?.priority || "",
+      severity: complaint?.severity || "",
+      deadline: complaint?.deadline ? new Date(complaint.deadline) : undefined,
+      recommendedDepartment: complaint?.initialDepartmentId,
     },
   })
 
@@ -300,63 +307,108 @@ export function ComplaintForm() {
     }
     
     setIsSubmitting(true);
-    const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
     
-    const newComplaintData = {
-        title: data.title,
-        description: data.description,
-        ...(data.location && { location: data.location }),
-        citizenId: user.uid,
-        initialDepartmentId: data.recommendedDepartment || "Unassigned",
-        priority: data.priority || "Medium",
-        severity: data.severity || "Medium",
-        category: data.category,
-        deadline: data.deadline || null,
-        tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-        status: "Pending",
-        applicationNumber: applicationNumber,
-        isEscalated: false,
-        resolutionStatus: "Unresolved",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        history: [{
-            action: 'Complaint Submitted',
-            status: 'Pending',
-            comment: 'Citizen submitted the complaint.',
-            date: new Date().toISOString(),
-            updatedBy: user.uid
-        }]
-    };
+    if (complaint) {
+        // Edit mode
+        const complaintRef = doc(firestore, 'complaints', complaint._id);
+        const updatedComplaintData = {
+            title: data.title,
+            description: data.description,
+            ...(data.location && { location: data.location }),
+            initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
+            priority: data.priority || "Medium",
+            severity: data.severity || "Medium",
+            category: data.category,
+            deadline: data.deadline || null,
+            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+            updatedAt: serverTimestamp(),
+        };
 
-    const complaintsCol = collection(firestore, 'complaints');
-    addDoc(complaintsCol, newComplaintData)
-        .then((docRef) => {
-            toast({
-                title: "Complaint Submitted!",
-                description: `Application number #${applicationNumber} has been generated.`,
-            });
-            router.push('/dashboard/citizen/complaints');
-        })
-        .catch((error) => {
-            console.error("Error submitting complaint:", error);
-            const permissionError = new FirestorePermissionError({
-                path: complaintsCol.path,
-                operation: 'create',
-                requestResourceData: newComplaintData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            // This toast is a fallback for non-permission errors
-            if (error.code !== 'permission-denied') {
+        updateDoc(complaintRef, updatedComplaintData)
+            .then(() => {
                 toast({
-                    variant: "destructive",
-                    title: "Submission Failed",
-                    description: error.message || "An unexpected error occurred. Please try again.",
+                    title: "Complaint Updated!",
+                    description: `Complaint #${complaint.applicationNumber} has been updated.`,
                 });
-            }
-        })
-        .finally(() => {
-            setIsSubmitting(false);
-        });
+                router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+            })
+            .catch((error) => {
+                console.error("Error updating complaint:", error);
+                const permissionError = new FirestorePermissionError({
+                    path: complaintRef.path,
+                    operation: 'update',
+                    requestResourceData: updatedComplaintData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                if (error.code !== 'permission-denied') {
+                    toast({
+                        variant: "destructive",
+                        title: "Update Failed",
+                        description: error.message || "An unexpected error occurred. Please try again.",
+                    });
+                }
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
+    } else {
+        // Create mode
+        const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
+        const newComplaintData = {
+            title: data.title,
+            description: data.description,
+            ...(data.location && { location: data.location }),
+            citizenId: user.uid,
+            initialDepartmentId: data.recommendedDepartment || "Unassigned",
+            priority: data.priority || "Medium",
+            severity: data.severity || "Medium",
+            category: data.category,
+            deadline: data.deadline || null,
+            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+            status: "Pending",
+            applicationNumber: applicationNumber,
+            isEscalated: false,
+            resolutionStatus: "Unresolved",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            history: [{
+                action: 'Complaint Submitted',
+                status: 'Pending',
+                comment: 'Citizen submitted the complaint.',
+                date: new Date().toISOString(),
+                updatedBy: user.uid
+            }]
+        };
+
+        const complaintsCol = collection(firestore, 'complaints');
+        addDoc(complaintsCol, newComplaintData)
+            .then((docRef) => {
+                toast({
+                    title: "Complaint Submitted!",
+                    description: `Application number #${applicationNumber} has been generated.`,
+                });
+                router.push('/dashboard/citizen/complaints');
+            })
+            .catch((error) => {
+                console.error("Error submitting complaint:", error);
+                const permissionError = new FirestorePermissionError({
+                    path: complaintsCol.path,
+                    operation: 'create',
+                    requestResourceData: newComplaintData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                if (error.code !== 'permission-denied') {
+                    toast({
+                        variant: "destructive",
+                        title: "Submission Failed",
+                        description: error.message || "An unexpected error occurred. Please try again.",
+                    });
+                }
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
+    }
   }
 
     const getAddressFromCoordinates = async (lat: number, lng: number) => {
@@ -869,7 +921,7 @@ export function ComplaintForm() {
               <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>Cancel</Button>
               <Button type="submit" size="lg" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Complaint
+                {complaint ? 'Update Complaint' : 'Submit Complaint'}
               </Button>
           </div>
         </form>

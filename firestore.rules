@@ -196,8 +196,8 @@ service cloud.firestore {
       allow get: if isControlRoomStaff() || isOwner(resource.data.citizenId) || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId);
       allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && getStaffData().departmentId == request.query.where.initialDepartmentId);
       allow create: if isSignedIn() && isCreatingOwnComplaint();
-      allow update: if (isControlRoomStaff() || isOwner(resource.data.assignedToStaffId)) && isCitizenIdImmutable();
-      allow delete: if isControlRoomStaff();
+      allow update: if (isControlRoomStaff() || isOwner(resource.data.assignedToStaffId) || isOwner(resource.data.citizenId)) && isCitizenIdImmutable();
+      allow delete: if isControlRoomStaff() || isOwner(resource.data.citizenId);
     }
 
     /**
