@@ -809,7 +809,7 @@ export function ComplaintForm() {
                   </AlertDialogTitle>
                    {(capturedImage || recordedVideoUrl) && <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>}
               </AlertDialogHeader>
-              <div className="bg-black rounded-lg overflow-hidden border">
+              <div className="relative bg-black rounded-lg overflow-hidden border">
                   {capturedImage ? (
                       <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
                   ) : recordedVideoUrl ? (
