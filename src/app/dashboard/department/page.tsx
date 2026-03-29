@@ -39,7 +39,7 @@ export default function DepartmentDashboardPage() {
     return (
         <div className="space-y-4 -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8">
              <Card className="rounded-none border-x-0 border-t-0">
-                <CardContent className="aspect-[21/9] p-0">
+                <CardContent className="aspect-[18/9] p-0">
                     <ComplaintsMap locations={locations} />
                 </CardContent>
             </Card>
