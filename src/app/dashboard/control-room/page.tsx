@@ -18,11 +18,6 @@ export default function ControlRoomDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-headline font-bold">Control Room Overview</h1>
-                <p className="text-muted-foreground">City-wide complaint monitoring and management.</p>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div className="lg:col-span-3">
                     <Card>
