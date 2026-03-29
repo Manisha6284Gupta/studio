@@ -57,7 +57,7 @@ export default function DashboardLayout({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                        <Link href="/login/citizen">
+                        <Link href="/">
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>
                         </Link>
