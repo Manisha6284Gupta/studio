@@ -52,18 +52,12 @@ export default function DepartmentDashboardPage() {
             <StatsCards stats={stats} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Assigned Complaints</CardTitle>
-                            <CardDescription>Filter and manage all complaints assigned to your department.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                           <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-                           <ComplaintsTable complaints={filteredComplaints} />
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card className="lg:col-span-2">
+                    <CardContent className="space-y-4 pt-6">
+                       <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+                       <ComplaintsTable complaints={filteredComplaints} />
+                    </CardContent>
+                </Card>
                  <div className="space-y-8">
                     <Card>
                         <CardHeader>
