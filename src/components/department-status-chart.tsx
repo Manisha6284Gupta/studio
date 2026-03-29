@@ -45,9 +45,9 @@ export function DepartmentStatusChart({ complaints }: DepartmentStatusChartProps
     } = {}
 
     complaints.forEach((complaint) => {
-      const { departmentId, status } = complaint
-      if (!departmentData[departmentId]) {
-        departmentData[departmentId] = {
+      const { initialDepartmentId, status } = complaint
+      if (!departmentData[initialDepartmentId]) {
+        departmentData[initialDepartmentId] = {
           Pending: 0,
           "In Progress": 0,
           Resolved: 0,
@@ -55,10 +55,10 @@ export function DepartmentStatusChart({ complaints }: DepartmentStatusChartProps
           total: 0,
         }
       }
-      if (departmentData[departmentId][status] !== undefined) {
-        departmentData[departmentId][status]++
+      if (departmentData[initialDepartmentId][status] !== undefined) {
+        departmentData[initialDepartmentId][status]++
       }
-      departmentData[departmentId].total++
+      departmentData[initialDepartmentId].total++
     })
 
     const data = Object.keys(departmentData).map((department) => ({

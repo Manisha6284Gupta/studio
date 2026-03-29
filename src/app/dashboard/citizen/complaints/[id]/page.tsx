@@ -192,7 +192,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <DetailItem icon={<Calendar className="h-5 w-5"/>} label="Deadline" value={complaint.deadline ? <FormattedDate date={complaint.deadline} formatString="PPP" /> : 'N/A'} />
-                             <DetailItem icon={<User className="h-5 w-5"/>} label="Assigned Department" value={complaint.departmentId} />
+                             <DetailItem icon={<User className="h-5 w-5"/>} label="Assigned Department" value={complaint.initialDepartmentId} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Priority" value={complaint.priority} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Severity" value={complaint.severity} />
                         </CardContent>
@@ -227,8 +227,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                                 </div>
                                 <Button className="w-full"><MessageSquare className="mr-2 h-4 w-4"/> Submit Feedback</Button>
                             </CardContent>
-                        </Card>
-                    )}
+                        )}
                 </div>
 
             </div>

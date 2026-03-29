@@ -13,7 +13,7 @@ import { DepartmentComplaintsFilters } from "@/components/department-complaints-
 export default function DepartmentDashboardPage() {
     // In a real app, this data would be fetched for the logged-in department
     const departmentId = "Public Works";
-    const departmentComplaints = React.useMemo(() => mockComplaints.filter(c => c.departmentId === departmentId), []);
+    const departmentComplaints = React.useMemo(() => mockComplaints.filter(c => c.initialDepartmentId === departmentId), []);
     const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>(departmentComplaints);
     
     const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date }) => {

@@ -50,7 +50,7 @@ export interface Complaint {
   location: ComplaintLocation;
   image?: string;
   citizenId: string; // ObjectId as string
-  departmentId: string; // ObjectId as string
+  initialDepartmentId: string; // ObjectId as string
   priority: ComplaintPriority;
   severity: ComplaintSeverity;
   assignedTo?: string; // ObjectId as string
