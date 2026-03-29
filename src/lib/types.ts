@@ -47,7 +47,7 @@ export interface Complaint {
   _id: string; // ObjectId as string
   title: string;
   description: string;
-  location: ComplaintLocation;
+  location?: ComplaintLocation;
   image?: string;
   citizenId: string; // ObjectId as string
   initialDepartmentId: string; // ObjectId as string

@@ -9,7 +9,7 @@ import { CitizenComplaintsFilters } from "@/components/citizen-complaints-filter
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { StatsCards } from "@/components/stats-cards";
-import type { Complaint, ComplaintCategory, ComplaintStatus } from "@/lib/types";
+import type { Complaint, ComplaintCategory, ComplaintLocation, ComplaintStatus } from "@/lib/types";
 import { isSameDay } from "date-fns";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
@@ -111,7 +111,7 @@ export default function CitizenComplaintsPage() {
         setFilteredComplaints(complaints);
     }, [citizenComplaints]);
     
-    const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
+    const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter((l): l is ComplaintLocation => !!l), [filteredComplaints]);
 
     const isLoading = isUserLoading || isComplaintsLoading;
 

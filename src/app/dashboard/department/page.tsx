@@ -4,7 +4,7 @@ import * as React from "react";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Complaint, ComplaintStatus } from "@/lib/types";
+import type { Complaint, ComplaintLocation, ComplaintStatus } from "@/lib/types";
 import { isSameDay } from "date-fns";
 import { DepartmentComplaintsFilters } from "@/components/department-complaints-filters";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
@@ -87,7 +87,7 @@ export default function DepartmentDashboardPage() {
         setFilteredComplaints(complaints);
     }, [departmentComplaints]);
     
-    const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
+    const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter((l): l is ComplaintLocation => !!l), [filteredComplaints]);
 
     const isLoading = isUserLoading || isStaffLoading;
 

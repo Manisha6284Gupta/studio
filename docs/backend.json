@@ -174,21 +174,24 @@
           "type": "string",
           "description": "A detailed description of the complaint or problem."
         },
-        "locationType": {
-          "type": "string",
-          "description": "The type of geographical location for the complaint (e.g., 'Point').",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
-        },
-        "longitude": {
-          "type": "number",
-          "description": "The longitude coordinate of the complaint's location."
-        },
-        "latitude": {
-          "type": "number",
-          "description": "The latitude coordinate of the complaint's location."
+        "location": {
+          "type": "object",
+          "description": "The geographical location of the complaint.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["Point"]
+            },
+            "coordinates": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": ["type", "coordinates"]
         },
         "citizenId": {
           "type": "string",
@@ -345,9 +348,6 @@
         "id",
         "title",
         "description",
-        "locationType",
-        "longitude",
-        "latitude",
         "citizenId",
         "initialDepartmentId",
         "priority",

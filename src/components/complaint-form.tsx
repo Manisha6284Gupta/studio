@@ -298,14 +298,6 @@ export function ComplaintForm() {
         });
         return;
     }
-    if (!data.location) {
-        toast({
-            variant: "destructive",
-            title: "Location is required",
-            description: "Please set the location for your complaint.",
-        });
-        return;
-    }
     
     setIsSubmitting(true);
     const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
@@ -313,10 +305,7 @@ export function ComplaintForm() {
     const newComplaintData = {
         title: data.title,
         description: data.description,
-        location: data.location,
-        locationType: "Point",
-        longitude: data.location.coordinates[0],
-        latitude: data.location.coordinates[1],
+        ...(data.location && { location: data.location }),
         citizenId: user.uid,
         initialDepartmentId: data.recommendedDepartment || "Unassigned",
         priority: data.priority || "Medium",
