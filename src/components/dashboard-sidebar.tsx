@@ -36,10 +36,15 @@ const controlRoomNav = [
     { name: "Departments", href: "/dashboard/control-room/departments", icon: Building },
 ]
 
-// In a real app, this would come from session
-const user = {
-    role: "citizen", // "citizen", "department", "control-room"
-};
+const getRoleFromPathname = (pathname: string) => {
+    if (pathname.startsWith('/dashboard/department')) {
+        return 'department';
+    }
+    if (pathname.startsWith('/dashboard/control-room')) {
+        return 'control-room';
+    }
+    return 'citizen';
+}
 
 const getNavItems = (role: string) => {
     switch(role) {
@@ -67,8 +72,9 @@ function getBaseDashboardPath(role: string) {
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const navItems = getNavItems(user.role);
-  const baseDashboardPath = getBaseDashboardPath(user.role);
+  const role = getRoleFromPathname(pathname);
+  const navItems = getNavItems(role);
+  const baseDashboardPath = getBaseDashboardPath(role);
 
   return (
     <Sidebar collapsible="icon">
