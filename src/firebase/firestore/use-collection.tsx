@@ -58,18 +58,18 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
     if (!memoizedTargetRefOrQuery) {
       setData(null);
-      setIsLoading(false);
+      setIsLoading(false); // Set to false if no query is provided
       setError(null);
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Ensure loading is true when query is available
     setError(null);
 
     // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
