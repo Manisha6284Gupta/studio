@@ -1,11 +1,26 @@
+"use client";
+
+import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { StatsCards } from "@/components/stats-cards";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, FileText, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { ComplaintsChart } from "@/components/complaints-chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CitizenDashboardPage() {
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+
+    const citizenRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, "citizens", user.uid);
+    }, [firestore, user]);
+
+    const { data: citizen, isLoading: isCitizenLoading } = useDoc<{fullName: string}>(citizenRef);
+
     // In a real app, this data would be fetched for the logged-in user
     const stats = {
         total: 12,
@@ -14,12 +29,24 @@ export default function CitizenDashboardPage() {
         overdue: 1,
     }
 
+    const isLoading = isUserLoading || isCitizenLoading;
+    const citizenName = citizen?.fullName?.split(' ')[0] || 'Citizen';
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
                 <div>
-                    <h1 className="text-3xl font-headline font-bold">Welcome, John!</h1>
-                    <p className="text-muted-foreground">Here&apos;s a summary of your civic engagement.</p>
+                    {isLoading ? (
+                        <div className="space-y-2">
+                            <Skeleton className="h-9 w-48" />
+                            <Skeleton className="h-5 w-64" />
+                        </div>
+                    ) : (
+                        <>
+                            <h1 className="text-3xl font-headline font-bold">Welcome, {citizenName}!</h1>
+                            <p className="text-muted-foreground">Here&apos;s a summary of your civic engagement.</p>
+                        </>
+                    )}
                 </div>
                 <Button asChild>
                     <Link href="/dashboard/citizen/complaints/new">
