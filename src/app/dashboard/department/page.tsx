@@ -38,21 +38,21 @@ export default function DepartmentDashboardPage() {
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-3 space-y-4">
                 <Card>
                     <CardContent className="p-2">
                         <ComplaintsMap locations={locations} />
                     </CardContent>
                 </Card>
-                <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
                 <Card>
                     <CardContent className="p-2">
                         <ComplaintsTable complaints={filteredComplaints} />
                     </CardContent>
                 </Card>
             </div>
-            <div className="space-y-4">
+            <div className="lg:col-span-2 space-y-4">
+                 <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
                  <Card>
                     <CardHeader>
                         <CardTitle>Volume by Category</CardTitle>

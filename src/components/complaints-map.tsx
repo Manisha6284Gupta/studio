@@ -23,7 +23,7 @@ export function ComplaintsMap({ locations }: ComplaintsMapProps) {
 
     if (loadError) {
         return (
-            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border flex items-center justify-center bg-destructive/10 text-destructive">
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden border flex items-center justify-center bg-destructive/10 text-destructive">
                 <p>Error loading maps. Please check your API key.</p>
             </div>
         );
@@ -31,12 +31,12 @@ export function ComplaintsMap({ locations }: ComplaintsMapProps) {
     
     if (!isLoaded) {
         return (
-             <Skeleton className="w-full aspect-[4/3] rounded-lg" />
+             <Skeleton className="w-full aspect-video rounded-lg" />
         );
     }
 
     return (
-        <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border">
+        <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
             <GoogleMap
                 mapContainerStyle={mapContainerStyle}
                 zoom={12}
