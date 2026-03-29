@@ -44,7 +44,12 @@ const translateTextFlow = ai.defineFlow(
     outputSchema: TranslateTextOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    const response = await prompt(input);
+    const output = response.output;
+    if (!output) {
+      console.error("Translation flow failed to produce structured output. Raw text:", response.text);
+      throw new Error("AI failed to generate a valid translation structure.");
+    }
+    return output;
   }
 );

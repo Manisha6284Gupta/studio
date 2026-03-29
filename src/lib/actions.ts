@@ -9,7 +9,7 @@ export async function runCategorizeComplaint(input: Omit<ComplaintCategorization
         return result;
     } catch (error) {
         console.error("Error in categorizeComplaint flow:", error);
-        throw new Error("Failed to categorize complaint.");
+        throw error;
     }
 }
 
@@ -19,6 +19,6 @@ export async function runTranslateText(input: TranslateTextInput) {
         return result;
     } catch (error) {
         console.error("Error in translateText flow:", error);
-        throw new Error("Failed to translate text.");
+        throw error;
     }
 }

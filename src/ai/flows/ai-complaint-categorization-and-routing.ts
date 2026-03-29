@@ -65,7 +65,12 @@ const complaintCategorizationAndRoutingFlow = ai.defineFlow(
     outputSchema: ComplaintCategorizationAndRoutingOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    const response = await prompt(input);
+    const output = response.output;
+    if (!output) {
+      console.error("Categorization flow failed to produce structured output. Raw text:", response.text);
+      throw new Error("AI failed to generate a valid categorization structure.");
+    }
+    return output;
   }
 );
