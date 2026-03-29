@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, User } from 'lucide-react';
+import { Upload, User, Building, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 // In a real app, this would come from a user session/context
 const citizenUser = {
@@ -18,13 +19,13 @@ const citizenUser = {
 };
 
 const departmentUser = {
-    name: "Department User",
+    name: "Public Works Department",
     email: "public.works@example.gov",
     avatar: ""
 };
 
 const controlRoomUser = {
-    name: "Control Room Staff",
+    name: "City Control Room",
     email: "control.room@example.gov",
     avatar: ""
 };
@@ -92,8 +93,12 @@ export default function SettingsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Profile</CardTitle>
-                    <CardDescription>Update your personal details and profile picture.</CardDescription>
+                    <CardTitle>
+                        {role === 'citizen' && 'Profile'}
+                        {role === 'department' && 'Department Profile'}
+                        {role === 'control-room' && 'Control Room Profile'}
+                    </CardTitle>
+                    <CardDescription>Update your details and profile picture.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center gap-6">
@@ -101,7 +106,9 @@ export default function SettingsPage() {
                             <Avatar className="h-24 w-24 border">
                                 <AvatarImage src={avatarPreview || ''} alt={user.name} />
                                 <AvatarFallback>
-                                    {user.name ? user.name.charAt(0) : <User className="h-10 w-10"/>}
+                                    {role === 'citizen' && (user.name ? user.name.charAt(0) : <User className="h-10 w-10"/>)}
+                                    {role === 'department' && <Building className="h-10 w-10"/>}
+                                    {role === 'control-room' && <Shield className="h-10 w-10"/>}
                                 </AvatarFallback>
                             </Avatar>
                             <Button asChild size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 cursor-pointer">
@@ -119,7 +126,11 @@ export default function SettingsPage() {
                     </div>
                     
                     <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name">
+                            {role === 'citizen' && 'Full Name'}
+                            {role === 'department' && 'Department Name'}
+                            {role === 'control-room' && 'Team Name'}
+                        </Label>
                         <Input 
                             id="name" 
                             value={user.name} 
@@ -139,6 +150,29 @@ export default function SettingsPage() {
                      <Button onClick={handleSaveChanges}>Save Changes</Button>
                 </CardContent>
             </Card>
+
+            {['department', 'control-room'].includes(role) && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Notification Settings</CardTitle>
+                        <CardDescription>Manage how you receive notifications.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="email-notifications" className="text-base font-medium">Email Notifications</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {role === 'department' 
+                                        ? 'Receive an email for new complaint assignments and status updates.'
+                                        : 'Receive an email for system-wide alerts and critical escalations.'
+                                    }
+                                </p>
+                            </div>
+                            <Switch id="email-notifications" defaultChecked />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>
