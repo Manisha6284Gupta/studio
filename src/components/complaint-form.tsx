@@ -29,7 +29,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { CalendarIcon, Camera, Loader2, MapPin, Mic, RefreshCcw, Sparkles, Trash2, UploadCloud } from "lucide-react"
+import { CalendarIcon, Camera, Loader2, MapPin, Mic, RefreshCcw, Sparkles, Trash2, UploadCloud, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -56,7 +56,7 @@ export function ComplaintForm() {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [mediaFile, setMediaFile] = useState<{ dataUrl: string; type: 'image' | 'video' } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -64,9 +64,11 @@ export function ComplaintForm() {
   const [isTranslating, setIsTranslating] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const descriptionBaseText = useRef<string>("");
+  
+  const [locationName, setLocationName] = useState<string | null>(null);
+
 
   useEffect(() => {
-    // Cleanup speech recognition on component unmount
     return () => {
       recognitionRef.current?.stop();
     };
@@ -103,9 +105,6 @@ export function ComplaintForm() {
     const recognition = recognitionRef.current;
     recognition.continuous = true;
     recognition.interimResults = true;
-    // Set language based on user's preference or let it auto-detect if possible
-    // For this example, we let it be flexible. Some browsers default to browser language.
-    // recognition.lang = 'en-US'; 
 
     recognition.onstart = () => {
       descriptionBaseText.current = form.getValues("description");
@@ -132,7 +131,6 @@ export function ComplaintForm() {
             title: "Translation Failed",
             description: "Could not translate your text. Please ensure you are connected to the internet or try typing in English.",
           });
-          // Revert to original text before translation attempt
           form.setValue("description", (descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ` : "") + spokenText);
         } finally {
           setIsTranslating(false);
@@ -171,7 +169,7 @@ export function ComplaintForm() {
       }
       
       const newText = (descriptionBaseText.current ? `${descriptionBaseText.current.trim()} ` : "") + finalTranscript + interimTranscript;
-      form.setValue("description", newText.trim(), { shouldValidate: false }); // No validation during dictation
+      form.setValue("description", newText.trim(), { shouldValidate: false });
     };
 
     recognition.start();
@@ -192,7 +190,12 @@ export function ComplaintForm() {
 
     setIsAiLoading(true)
     try {
-      const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint({ title, description });
+      const complaintInput: any = { title, description };
+      if (mediaFile && mediaFile.type === 'image') {
+        complaintInput.photoDataUri = mediaFile.dataUrl;
+      }
+      
+      const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
       
       form.setValue("category", result.category)
       form.setValue("priority", result.priority)
@@ -235,37 +238,71 @@ export function ComplaintForm() {
     })
   }
 
-  const handleSetLocation = () => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                form.setValue("location", { type: "Point", coordinates: [longitude, latitude] }, { shouldValidate: true });
-                toast({
+    const getAddressFromCoordinates = async (lat: number, lng: number) => {
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error("Google Maps API key is not configured.");
+            setLocationName("Could not fetch address: API Key missing.");
+            return;
+        }
+        try {
+            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`);
+            const data = await response.json();
+            if (data.status === "OK" && data.results[0]) {
+                setLocationName(data.results[0].formatted_address);
+                 toast({
                     title: "Location Set",
-                    description: "Your current location has been captured.",
+                    description: `Location captured: ${data.results[0].formatted_address}`,
                 });
-            },
-            (error) => {
-                console.error("Error getting location:", error);
+            } else {
+                setLocationName("Address not found.");
                 toast({
                     variant: "destructive",
                     title: "Location Error",
-                    description: "Could not retrieve your location. Please ensure you've granted permission.",
+                    description: "Could not find a valid address for your location.",
                 });
-            },
-            {
-                enableHighAccuracy: true,
             }
-        );
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Geolocation Not Supported",
-            description: "Your browser does not support geolocation.",
-        });
-    }
-};
+        } catch (error) {
+            console.error("Error reverse geocoding:", error);
+            setLocationName("Could not fetch address due to a network error.");
+            toast({
+                variant: "destructive",
+                title: "Location Error",
+                description: "Could not retrieve your location address. Please check your network.",
+            });
+        }
+    };
+
+
+    const handleSetLocation = () => {
+        setLocationName("Fetching location...");
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    form.setValue("location", { type: "Point", coordinates: [longitude, latitude] }, { shouldValidate: true });
+                    getAddressFromCoordinates(latitude, longitude);
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                    setLocationName(null);
+                    toast({
+                        variant: "destructive",
+                        title: "Location Error",
+                        description: "Could not retrieve your location. Please ensure you've granted permission.",
+                    });
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            setLocationName(null);
+            toast({
+                variant: "destructive",
+                title: "Geolocation Not Supported",
+                description: "Your browser does not support geolocation.",
+            });
+        }
+    };
 
   const handleOpenCamera = async () => {
     try {
@@ -294,7 +331,8 @@ export function ComplaintForm() {
           if (context) {
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const imageDataUrl = canvas.toDataURL('image/png');
-            setCapturedImage(imageDataUrl);
+            setMediaFile({ dataUrl: imageDataUrl, type: 'image' });
+            toast({ title: 'Image captured successfully!' });
           }
 
           const stream = video.srcObject as MediaStream;
@@ -316,14 +354,35 @@ export function ComplaintForm() {
     }
     setIsCameraOpen(false);
   }
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result as string;
+                if(file.type.startsWith('image/')) {
+                    setMediaFile({ dataUrl, type: 'image' });
+                    toast({ title: 'Image uploaded successfully!' });
+                } else if (file.type.startsWith('video/')) {
+                    setMediaFile({ dataUrl, type: 'video' });
+                    toast({ title: 'Video uploaded successfully!' });
+                } else {
+                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload an image or video file.' });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
 
   const handleRetake = () => {
-      setCapturedImage(null);
+      setMediaFile(null);
       handleOpenCamera();
   };
 
   const handleDeleteImage = () => {
-      setCapturedImage(null);
+      setMediaFile(null);
   };
 
   return (
@@ -404,7 +463,7 @@ export function ComplaintForm() {
                                                 onClick={handleSetLocation}
                                             >
                                                 <MapPin className="mr-2 h-4 w-4" />
-                                                {field.value ? `Location Set: ${field.value.coordinates[1].toFixed(4)}, ${field.value.coordinates[0].toFixed(4)}` : "Use My Current Location"}
+                                                {locationName || "Use My Current Location"}
                                             </Button>
                                         <FormDescription>Uses your device's GPS to pinpoint the exact location.</FormDescription>
                                         <FormMessage />
@@ -413,14 +472,14 @@ export function ComplaintForm() {
                             />
                           <FormItem>
                               <FormLabel>Attach Media</FormLabel>
-                              <div className={cn("w-full", capturedImage ? "hidden" : "grid grid-cols-1 sm:grid-cols-2 gap-4")}>
+                              <div className={cn("w-full", mediaFile ? "hidden" : "grid grid-cols-1 sm:grid-cols-2 gap-4")}>
                                 <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
                                       <div className="flex flex-col items-center justify-center">
                                           <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
                                           <p className="font-semibold">Click to upload</p>
-                                          <p className="text-xs text-muted-foreground">or drag and drop</p>
+                                          <p className="text-xs text-muted-foreground">Image or Video</p>
                                       </div>
-                                      <input id="dropzone-file" type="file" className="hidden" />
+                                      <input id="dropzone-file" type="file" className="hidden" accept="image/*,video/*" onChange={handleFileSelect}/>
                                   </label>
                                   <button type="button" onClick={handleOpenCamera} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
                                       <div className="flex flex-col items-center justify-center">
@@ -430,15 +489,21 @@ export function ComplaintForm() {
                                       </div>
                                   </button>
                               </div>
-                              {capturedImage && (
+                              {mediaFile && (
                                   <div className="mt-2 relative w-full max-w-md mx-auto">
-                                      <p className="text-sm font-medium mb-2 text-muted-foreground">Image Preview:</p>
+                                      <p className="text-sm font-medium mb-2 text-muted-foreground">{mediaFile.type === 'image' ? 'Image' : 'Video'} Preview:</p>
                                       <div className="relative">
-                                          <Image src={capturedImage} alt="Captured complaint" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
+                                          {mediaFile.type === 'image' ? (
+                                             <Image src={mediaFile.dataUrl} alt="Complaint media" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
+                                          ) : (
+                                              <video src={mediaFile.dataUrl} controls className="rounded-lg border w-full h-auto object-cover" />
+                                          )}
                                           <div className="absolute top-2 right-2 flex gap-2">
-                                              <Button type="button" size="icon" variant="outline" className="bg-background/50 hover:bg-background" onClick={handleRetake}>
-                                                  <RefreshCcw className="h-4 w-4" />
-                                              </Button>
+                                              {mediaFile.type === 'image' && (
+                                                <Button type="button" size="icon" variant="outline" className="bg-background/50 hover:bg-background" onClick={handleRetake}>
+                                                    <RefreshCcw className="h-4 w-4" />
+                                                </Button>
+                                              )}
                                               <Button type="button" size="icon" variant="destructive" onClick={handleDeleteImage}>
                                                   <Trash2 className="h-4 w-4" />
                                               </Button>
@@ -622,5 +687,3 @@ export function ComplaintForm() {
     </div>
   )
 }
-
-    

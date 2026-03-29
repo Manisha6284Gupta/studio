@@ -15,6 +15,7 @@ const ComplaintCategorizationAndRoutingInputSchema = z.object({
   title: z.string().describe('The title or subject of the complaint.'),
   description: z.string().describe('A detailed description of the complaint.'),
   currentDate: z.string().datetime().describe('The current date and time in ISO 8601 format (e.g., "YYYY-MM-DDTHH:mm:ssZ"), used to calculate deadlines.'),
+  photoDataUri: z.string().describe("A photo of the complaint, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.").optional(),
 });
 export type ComplaintCategorizationAndRoutingInput = z.infer<typeof ComplaintCategorizationAndRoutingInputSchema>;
 
@@ -40,8 +41,12 @@ const prompt = ai.definePrompt({
   output: { schema: ComplaintCategorizationAndRoutingOutputSchema },
   prompt: `You are an expert civic complaint analyst system. Your task is to analyze a citizen's complaint and provide a structured categorization and routing recommendation.
 Consider the current date: {{{currentDate}}} when calculating the deadline. Use this date as a reference to calculate the deadline in the future.
+{{#if photoDataUri}}
+You have also been provided with an image of the complaint. Use the visual information from this image in combination with the text to make a more accurate assessment. The image is crucial for determining the severity of the issue (e.g., the size of a pothole, the extent of illegal dumping).
+Photo: {{media url=photoDataUri}}
+{{/if}}
 
-Based on the provided title and description, perform the following:
+Based on the provided title, description, and image (if available), perform the following:
 1.  **Categorize** the complaint into one of the following types: Infrastructure, Utility, Health, Environment, Other.
 2.  Suggest a list of **tags** (keywords) that accurately describe the complaint. These should be concise and relevant.
 3.  Recommend the **department(s)** or agencies best suited to handle this complaint. Provide a concise name for each department.
