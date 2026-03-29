@@ -56,10 +56,10 @@ export default function ControlRoomDashboardPage() {
     const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc(controlRoomStaffRef);
 
     const complaintsQuery = useMemoFirebase(() => {
-        // Only fetch if the user role check is complete and they are control room staff.
-        if (isRoleLoading || !controlRoomStaff) return null;
+        // Only fetch if the user is authenticated and the role check is complete and they are control room staff.
+        if (!user || isRoleLoading || !controlRoomStaff) return null;
         return query(collection(firestore, 'complaints'));
-    }, [firestore, controlRoomStaff, isRoleLoading]);
+    }, [firestore, user, controlRoomStaff, isRoleLoading]);
     
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
 
@@ -71,7 +71,7 @@ export default function ControlRoomDashboardPage() {
     const isLoading = isUserLoading || isRoleLoading;
 
     // If role check is done and user is not control room staff, show access denied.
-    if (!isUserLoading && !isRoleLoading && !controlRoomStaff) {
+    if (!isLoading && !controlRoomStaff) {
         return (
             <div className="flex h-full items-center justify-center">
                 <Card className="w-full max-w-md text-center">
@@ -88,14 +88,14 @@ export default function ControlRoomDashboardPage() {
     }
     
     const stats = React.useMemo(() => {
-        if (isLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        if (isComplaintsLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
         return {
             total: complaints.length,
             resolved: complaints.filter(c => c.status === 'Resolved').length,
             pending: complaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
             overdue: complaints.filter(c => c.status === 'Overdue').length,
         }
-    }, [complaints, isLoading]);
+    }, [complaints, isComplaintsLoading]);
 
     const locations = React.useMemo(() => complaints.map(c => c.location).filter(Boolean), [complaints]);
     
