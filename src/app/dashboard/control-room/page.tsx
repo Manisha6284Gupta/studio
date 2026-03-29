@@ -1,4 +1,4 @@
-import { ComplaintsChart } from "@/components/complaints-chart";
+import { DepartmentStatusChart } from "@/components/department-status-chart";
 import { ComplaintsFilters } from "@/components/complaints-filters";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
@@ -46,10 +46,11 @@ export default function ControlRoomDashboardPage() {
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Volume by Category</CardTitle>
+                                <CardTitle>Department Performance Overview</CardTitle>
+                                <CardDescription>Breakdown of complaint statuses across all departments. The most active department is shown first.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                            <ComplaintsChart />
+                                <DepartmentStatusChart complaints={mockComplaints} />
                             </CardContent>
                         </Card>
                     </div>
