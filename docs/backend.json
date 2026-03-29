@@ -151,6 +151,7 @@
         "fullName",
         "email",
         "phoneNumber",
+        "departmentId",
         "role",
         "createdAt"
       ]
