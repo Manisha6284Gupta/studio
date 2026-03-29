@@ -5,7 +5,6 @@ import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import type { Complaint, ComplaintHistory } from "@/lib/types";
 import { ArrowLeft, Calendar, Check, Edit, MessageSquare, Star, User } from "lucide-react";
@@ -104,13 +103,14 @@ const ComplaintDetailSkeleton = () => (
 );
 
 
-export default function ComplaintDetailPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default function ComplaintDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
     const firestore = useFirestore();
 
     const complaintRef = useMemoFirebase(() => {
         if (!id || !firestore) return null;
-        return doc(firestore, 'complaints', id as string);
+        return doc(firestore, 'complaints', id);
     }, [firestore, id]);
 
     const { data: rawComplaint, isLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);

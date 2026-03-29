@@ -10,7 +10,7 @@ import type { Complaint, ComplaintHistory } from "@/lib/types";
 import { ArrowLeft, Calendar, Check, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import FormattedDate from "@/components/formatted-date";
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -103,13 +103,14 @@ const ComplaintDetailSkeleton = () => (
 );
 
 
-export default function ControlRoomComplaintDetailPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default function ControlRoomComplaintDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
     const firestore = useFirestore();
 
     const complaintRef = useMemoFirebase(() => {
         if (!id || !firestore) return null;
-        return doc(firestore, 'complaints', id as string);
+        return doc(firestore, 'complaints', id);
     }, [firestore, id]);
 
     const { data: rawComplaint, isLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
