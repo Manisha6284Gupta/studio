@@ -2,7 +2,6 @@
 
 import { ComplaintsTable } from "@/components/complaints-table";
 import { Button } from "@/components/ui/button";
-import { mockComplaints } from "@/lib/data";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
@@ -12,11 +11,74 @@ import { ComplaintsMap } from "@/components/complaints-map";
 import { StatsCards } from "@/components/stats-cards";
 import type { Complaint, ComplaintCategory, ComplaintStatus } from "@/lib/types";
 import { isSameDay } from "date-fns";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
+
+
+const PageSkeleton = () => (
+    <div className="space-y-8">
+        <div className="flex items-center justify-between">
+            <div>
+                <Skeleton className="h-9 w-48" />
+                <Skeleton className="h-5 w-64 mt-2" />
+            </div>
+            <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+        </div>
+        <div className="space-y-4">
+            <Skeleton className="h-16" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-52" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="w-full aspect-video" />
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-52" />
+                </CardHeader>
+                <CardContent>
+                   <Skeleton className="h-[600px] w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+);
 
 
 export default function CitizenComplaintsPage() {
-    const citizenComplaints = React.useMemo(() => mockComplaints.filter(c => c.citizenId === "citizen-123"), []);
-    const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>(citizenComplaints);
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+
+    const complaintsQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        return query(collection(firestore, 'complaints'), where('citizenId', '==', user.uid));
+    }, [firestore, user]);
+
+    const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
+
+    const citizenComplaints = React.useMemo(() => {
+        if (!rawComplaints) return [];
+        // The useCollection hook returns 'id', but our type uses '_id'.
+        return rawComplaints.map(c => ({ ...c, _id: c.id } as Complaint));
+    }, [rawComplaints]);
+    
+    const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>([]);
+    
+    React.useEffect(() => {
+        setFilteredComplaints(citizenComplaints);
+    }, [citizenComplaints]);
+
 
     const stats = React.useMemo(() => {
         return {
@@ -51,6 +113,11 @@ export default function CitizenComplaintsPage() {
     
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
 
+    const isLoading = isUserLoading || isComplaintsLoading;
+
+    if (isLoading) {
+        return <PageSkeleton />;
+    }
 
     return (
         <div className="space-y-8">

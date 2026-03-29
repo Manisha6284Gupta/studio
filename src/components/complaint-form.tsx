@@ -5,6 +5,7 @@ import { useForm, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,6 +38,10 @@ import { runCategorizeComplaint, runTranslateText } from "@/lib/actions"
 import { ComplaintCategorizationAndRoutingOutput } from "@/ai/flows/ai-complaint-categorization-and-routing"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
+import { useUser, useFirestore, errorEmitter } from "@/firebase";
+import { FirestorePermissionError } from "@/firebase/errors"
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+
 const complaintFormSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters."),
   description: z.string().min(25, "Description must be at least 25 characters."),
@@ -46,6 +51,10 @@ const complaintFormSchema = z.object({
   }).optional(),
   category: z.string().min(1, "Please select a category."),
   tags: z.string().optional(),
+  priority: z.string().optional(),
+  severity: z.string().optional(),
+  deadline: z.date().optional(),
+  recommendedDepartment: z.string().optional(),
 })
 
 type ComplaintFormValues = z.infer<typeof complaintFormSchema>
@@ -53,6 +62,10 @@ type ComplaintFormValues = z.infer<typeof complaintFormSchema>
 export function ComplaintForm() {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
+  const { user } = useUser()
+  const firestore = useFirestore()
   
   const [mediaFile, setMediaFile] = useState<{ dataUrl: string; type: 'image' | 'video' } | null>(null);
 
@@ -84,6 +97,9 @@ export function ComplaintForm() {
       description: "",
       tags: "",
       location: undefined,
+      category: "",
+      priority: "",
+      severity: "",
     },
   })
 
@@ -249,6 +265,12 @@ export function ComplaintForm() {
       
       form.setValue("category", result.category, { shouldValidate: true });
       form.setValue("tags", result.tags.join(", "), { shouldValidate: true });
+      form.setValue("priority", result.priority, { shouldValidate: true });
+      form.setValue("severity", result.severity, { shouldValidate: true });
+      form.setValue("deadline", new Date(result.deadline), { shouldValidate: true });
+      if (result.recommendedDepartmentNames.length > 0) {
+        form.setValue("recommendedDepartment", result.recommendedDepartmentNames[0]);
+      }
       
       toast({
         title: "AI Analysis Complete",
@@ -267,8 +289,15 @@ export function ComplaintForm() {
     }
   }
 
-  function onSubmit(data: ComplaintFormValues) {
-    console.log(data)
+  async function onSubmit(data: ComplaintFormValues) {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to submit a complaint.",
+        });
+        return;
+    }
     if (!data.location) {
         toast({
             variant: "destructive",
@@ -277,10 +306,68 @@ export function ComplaintForm() {
         });
         return;
     }
-    toast({
-      title: "Complaint Submitted!",
-      description: "Application number #CN-583921 has been generated.",
-    })
+    
+    setIsSubmitting(true);
+    const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
+    
+    const newComplaintData = {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        locationType: "Point",
+        longitude: data.location.coordinates[0],
+        latitude: data.location.coordinates[1],
+        citizenId: user.uid,
+        initialDepartmentId: data.recommendedDepartment || "Unassigned",
+        priority: data.priority || "Medium",
+        severity: data.severity || "Medium",
+        category: data.category,
+        deadline: data.deadline || null,
+        tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+        status: "Pending",
+        applicationNumber: applicationNumber,
+        isEscalated: false,
+        resolutionStatus: "Unresolved",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        history: [{
+            action: 'Complaint Submitted',
+            status: 'Pending',
+            comment: 'Citizen submitted the complaint.',
+            date: new Date().toISOString(),
+            updatedBy: user.uid
+        }]
+    };
+
+    const complaintsCol = collection(firestore, 'complaints');
+    addDoc(complaintsCol, newComplaintData)
+        .then((docRef) => {
+            toast({
+                title: "Complaint Submitted!",
+                description: `Application number #${applicationNumber} has been generated.`,
+            });
+            router.push('/dashboard/citizen/complaints');
+        })
+        .catch((error) => {
+            console.error("Error submitting complaint:", error);
+            const permissionError = new FirestorePermissionError({
+                path: complaintsCol.path,
+                operation: 'create',
+                requestResourceData: newComplaintData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            // This toast is a fallback for non-permission errors
+            if (error.code !== 'permission-denied') {
+                toast({
+                    variant: "destructive",
+                    title: "Submission Failed",
+                    description: error.message || "An unexpected error occurred. Please try again.",
+                });
+            }
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
   }
 
     const getAddressFromCoordinates = async (lat: number, lng: number) => {
@@ -650,46 +737,130 @@ export function ComplaintForm() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                           <FormField
-                          control={form.control}
-                          name="category"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Category</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="AI will suggest a category" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="Infrastructure">Infrastructure</SelectItem>
-                                    <SelectItem value="Utility">Utility</SelectItem>
-                                    <SelectItem value="Health">Health</SelectItem>
-                                    <SelectItem value="Environment">Environment</SelectItem>
-                                    <SelectItem value="Water Department">Water Department</SelectItem>
-                                    <SelectItem value="Road Department">Road Department</SelectItem>
-                                    <SelectItem value="Electricity">Electricity</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                              </FormItem>
-                          )}
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Category</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="AI will suggest a category" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                                        <SelectItem value="Utility">Utility</SelectItem>
+                                        <SelectItem value="Health">Health</SelectItem>
+                                        <SelectItem value="Environment">Environment</SelectItem>
+                                        <SelectItem value="Water Department">Water Department</SelectItem>
+                                        <SelectItem value="Road Department">Road Department</SelectItem>
+                                        <SelectItem value="Electricity">Electricity</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                          />
+                           <FormField
+                                control={form.control}
+                                name="priority"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Priority</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="AI will suggest priority" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="severity"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Severity</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="AI will suggest severity" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                        <SelectItem value="Critical">Critical</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                          <FormField
+                            control={form.control}
+                            name="tags"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Suggested Tags</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="AI will suggest tags" {...field} />
+                                </FormControl>
+                                <FormDescription>Comma-separated tags.</FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
                           />
                           <FormField
-                          control={form.control}
-                          name="tags"
-                          render={({ field }) => (
-                              <FormItem>
-                              <FormLabel>Suggested Tags</FormLabel>
-                              <FormControl>
-                                  <Input placeholder="AI will suggest tags" {...field} />
-                              </FormControl>
-                              <FormDescription>Comma-separated tags.</FormDescription>
-                              <FormMessage />
-                              </FormItem>
-                          )}
-                          />
+                                control={form.control}
+                                name="deadline"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Suggested Deadline</FormLabel>
+                                    <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value ? (
+                                            format(field.value, "PPP")
+                                            ) : (
+                                            <span>AI will suggest a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) => date < new Date()}
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
                       </CardContent>
                       <CardFooter className="flex-col items-start gap-2">
                           <Button type="button" className="w-full" onClick={handleAiAnalysis} disabled={isAiLoading}>
@@ -706,8 +877,11 @@ export function ComplaintForm() {
               </div>
           </div>
           <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" size="lg">Cancel</Button>
-              <Button type="submit" size="lg">Submit Complaint</Button>
+              <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>Cancel</Button>
+              <Button type="submit" size="lg" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Submit Complaint
+              </Button>
           </div>
         </form>
       </FormProvider>

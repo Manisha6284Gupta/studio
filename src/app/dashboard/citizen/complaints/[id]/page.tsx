@@ -1,18 +1,21 @@
 "use client";
 
+import { useMemo } from "react";
 import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { mockComplaints } from "@/lib/data";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import type { ComplaintHistory } from "@/lib/types";
+import type { Complaint, ComplaintHistory } from "@/lib/types";
 import { ArrowLeft, Calendar, Check, Edit, MessageSquare, Star, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import FormattedDate from "@/components/formatted-date";
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -42,10 +45,87 @@ const HistoryItem = ({ item }: { item: ComplaintHistory }) => {
     )
 }
 
+const ComplaintDetailSkeleton = () => (
+    <div className="space-y-8">
+        <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <div>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-32 mt-1" />
+            </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-3/4" />
+                        <Skeleton className="h-4 w-1/4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-5/6" />
+                        </div>
+                        <Skeleton className="mt-4 rounded-lg w-full h-64" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                         <Skeleton className="h-7 w-1/2" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-24" />
+                    </CardHeader>
+                     <CardContent className="space-y-6">
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                    </CardContent>
+                </Card>
+                <Card>
+                     <CardHeader>
+                        <Skeleton className="h-7 w-24" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="w-full aspect-video rounded-lg" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    </div>
+);
+
 
 export default function ComplaintDetailPage({ params }: { params: { id: string } }) {
-    const complaint = mockComplaints.find(c => c._id === params.id);
+    const { id } = params;
+    const firestore = useFirestore();
+
+    const complaintRef = useMemoFirebase(() => {
+        if (!id || !firestore) return null;
+        return doc(firestore, 'complaints', id as string);
+    }, [firestore, id]);
+
+    const { data: rawComplaint, isLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
+
+    const complaint = useMemo(() => {
+        if (!rawComplaint) return null;
+        // The useDoc hook returns 'id', but our type uses '_id'.
+        return { ...rawComplaint, _id: rawComplaint.id } as Complaint;
+    }, [rawComplaint]);
+
     const complaintImage = PlaceHolderImages.find(p => p.id === 'complaint-image-1');
+
+    if (isLoading) {
+        return <ComplaintDetailSkeleton />;
+    }
 
     if (!complaint) {
         notFound();
@@ -82,7 +162,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                         <CardContent>
                             <p className="text-foreground">{complaint.description}</p>
                             {complaintImage && (
-                                <Image 
+                                <Image
                                     src={complaintImage.imageUrl}
                                     data-ai-hint={complaintImage.imageHint}
                                     alt="Complaint Image"
@@ -99,7 +179,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                             <CardTitle>Status History</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {complaint.history.map((item, index) => <HistoryItem key={index} item={item} />)}
+                            {complaint.history?.map((item, index) => <HistoryItem key={index} item={item} />)}
                         </CardContent>
                     </Card>
                 </div>
@@ -117,13 +197,13 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Severity" value={complaint.severity} />
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader>
                            <CardTitle>Location</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ComplaintsMap locations={[complaint.location]} />
+                            <ComplaintsMap locations={complaint.location ? [complaint.location] : []} />
                         </CardContent>
                     </Card>
 
