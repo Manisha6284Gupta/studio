@@ -28,19 +28,19 @@ export default function ControlRoomDashboardPage() {
             
             <div className="pt-8 space-y-8">
                 <StatsCards stats={stats} />
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                    <div className="lg:col-span-3">
-                        <Card>
-                            <CardHeader>
+                <div className="space-y-8">
+                    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
+                        <Card className="rounded-none border-x-0">
+                            <CardHeader className="px-4 sm:px-6 lg:px-8">
                                 <CardTitle className="text-xl">All Complaints</CardTitle>
                                 <CardDescription className="text-xs">
                                     Filter, search, and manage all submitted complaints.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                            <ComplaintsFilters />
-                            <ComplaintsTable complaints={mockComplaints} />
+                            <CardContent className="px-4 sm:px-6 lg:px-8">
+                                <ComplaintsFilters />
                             </CardContent>
+                            <ComplaintsTable complaints={mockComplaints} />
                         </Card>
                     </div>
                     <div className="lg:col-span-2">
