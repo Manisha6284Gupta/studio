@@ -39,32 +39,37 @@ export default function DepartmentDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <Card>
-                <CardContent className="space-y-4 pt-6">
-                    <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-                    <ComplaintsTable complaints={filteredComplaints} />
-                </CardContent>
-            </Card>
+            <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-3 space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Complaint Locations</CardTitle>
+                            <CardDescription>Hotspots for filtered complaints.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ComplaintsMap locations={locations} />
+                        </CardContent>
+                    </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Complaint Locations</CardTitle>
-                        <CardDescription>Hotspots for filtered complaints.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ComplaintsMap locations={locations} />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Volume by Category</CardTitle>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <ComplaintsTable complaints={filteredComplaints} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 space-y-8">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Volume by Category</CardTitle>
                             <CardDescription>Breakdown of complaint types.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ComplaintsChart />
-                    </CardContent>
-                </Card>
+                        </CardHeader>
+                        <CardContent>
+                            <ComplaintsChart />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     )
