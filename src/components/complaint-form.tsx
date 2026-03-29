@@ -66,6 +66,7 @@ export function ComplaintForm() {
   const descriptionBaseText = useRef<string>("");
   
   const [locationName, setLocationName] = useState<string | null>(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
 
   useEffect(() => {
@@ -243,19 +244,25 @@ export function ComplaintForm() {
         if (!apiKey) {
             console.error("Google Maps API key is not configured.");
             setLocationName("Could not fetch address: API Key missing.");
+            toast({
+                variant: "destructive",
+                title: "Configuration Error",
+                description: "Google Maps API key is not configured.",
+            });
             return;
         }
         try {
             const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`);
             const data = await response.json();
             if (data.status === "OK" && data.results[0]) {
-                setLocationName(data.results[0].formatted_address);
+                const address = data.results[0].formatted_address;
+                setLocationName(address);
                  toast({
                     title: "Location Set",
-                    description: `Location captured: ${data.results[0].formatted_address}`,
+                    description: `Location captured: ${address}`,
                 });
             } else {
-                setLocationName("Address not found.");
+                setLocationName("Address not found for the captured coordinates.");
                 toast({
                     variant: "destructive",
                     title: "Location Error",
@@ -275,13 +282,16 @@ export function ComplaintForm() {
 
 
     const handleSetLocation = () => {
-        setLocationName("Fetching location...");
+        setIsFetchingLocation(true);
+        setLocationName(null);
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     form.setValue("location", { type: "Point", coordinates: [longitude, latitude] }, { shouldValidate: true });
-                    getAddressFromCoordinates(latitude, longitude);
+                    getAddressFromCoordinates(latitude, longitude).finally(() => {
+                        setIsFetchingLocation(false);
+                    });
                 },
                 (error) => {
                     console.error("Error getting location:", error);
@@ -291,6 +301,7 @@ export function ComplaintForm() {
                         title: "Location Error",
                         description: "Could not retrieve your location. Please ensure you've granted permission.",
                     });
+                    setIsFetchingLocation(false);
                 },
                 { enableHighAccuracy: true }
             );
@@ -301,6 +312,7 @@ export function ComplaintForm() {
                 title: "Geolocation Not Supported",
                 description: "Your browser does not support geolocation.",
             });
+            setIsFetchingLocation(false);
         }
     };
 
@@ -456,16 +468,28 @@ export function ComplaintForm() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Location</FormLabel>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="w-full justify-start text-left font-normal"
-                                                onClick={handleSetLocation}
-                                            >
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                            onClick={handleSetLocation}
+                                            disabled={isFetchingLocation}
+                                        >
+                                            {isFetchingLocation ? (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            ) : (
                                                 <MapPin className="mr-2 h-4 w-4" />
-                                                {locationName || "Use My Current Location"}
-                                            </Button>
-                                        <FormDescription>Uses your device's GPS to pinpoint the exact location.</FormDescription>
+                                            )}
+                                            {isFetchingLocation ? "Fetching your location..." : "Use My Current Location"}
+                                        </Button>
+                                        
+                                        {locationName ? (
+                                            <FormDescription className="text-foreground">
+                                                <span className="font-semibold">Selected Location:</span> {locationName}
+                                            </FormDescription>
+                                        ) : (
+                                            <FormDescription>Click the button to use your device's GPS to pinpoint the exact location.</FormDescription>
+                                        )}
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -529,7 +553,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Category</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value} disabled>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a category" />
@@ -553,7 +577,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Priority</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value} disabled>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a priority" />
@@ -575,7 +599,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Severity</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value} disabled>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a severity" />
@@ -607,6 +631,7 @@ export function ComplaintForm() {
                                           "w-full pl-3 text-left font-normal",
                                           !field.value && "text-muted-foreground"
                                       )}
+                                      disabled
                                       >
                                       {field.value ? (
                                           format(field.value, "PPP")
@@ -640,7 +665,7 @@ export function ComplaintForm() {
                               <FormItem>
                               <FormLabel>Suggested Tags</FormLabel>
                               <FormControl>
-                                  <Input placeholder="AI will suggest tags" {...field} />
+                                  <Input placeholder="AI will suggest tags" {...field} disabled />
                               </FormControl>
                               <FormDescription>Comma-separated tags.</FormDescription>
                               <FormMessage />
