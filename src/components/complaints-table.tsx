@@ -17,19 +17,20 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import FormattedDate from "./formatted-date";
 
 interface ComplaintsTableProps {
   complaints: Complaint[];
+  view?: 'citizen' | 'department' | 'control-room';
 }
 
-export function ComplaintsTable({ complaints }: ComplaintsTableProps) {
+export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTableProps) {
   const router = useRouter();
 
   return (
-    <div className="relative h-[600px] overflow-y-auto border-y">
+    <div className="relative h-[600px] overflow-auto border-y">
       <Table>
         <TableHeader>
           <TableRow>
@@ -64,14 +65,23 @@ export function ComplaintsTable({ complaints }: ComplaintsTableProps) {
                       <Eye className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
+                    {view === 'department' ? (
+                      <DropdownMenuItem>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Back
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
+                    {view !== 'department' && (
+                       <DropdownMenuItem className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
