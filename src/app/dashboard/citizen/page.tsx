@@ -1,7 +1,7 @@
 "use client";
 
-import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from "@/firebase";
+import { collection, query, where, doc } from "firebase/firestore";
 import { StatsCards } from "@/components/stats-cards";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,10 @@ import { ArrowRight, FileText, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { ComplaintsChart } from "@/components/complaints-chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as React from "react";
+import type { Complaint } from "@/lib/types";
+import FormattedDate from "@/components/formatted-date";
+
 
 export default function CitizenDashboardPage() {
     const { user, isUserLoading } = useUser();
@@ -20,16 +24,41 @@ export default function CitizenDashboardPage() {
     }, [firestore, user]);
 
     const { data: citizen, isLoading: isCitizenLoading } = useDoc<{fullName: string}>(citizenRef);
+    
+    const complaintsQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        return query(collection(firestore, 'complaints'), where('citizenId', '==', user.uid));
+    }, [firestore, user]);
 
-    // In a real app, this data would be fetched for the logged-in user
-    const stats = {
-        total: 12,
-        resolved: 8,
-        pending: 3,
-        overdue: 1,
-    }
+    const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
 
-    const isLoading = isUserLoading || isCitizenLoading;
+    const citizenComplaints = React.useMemo(() => {
+        if (!rawComplaints) return [];
+        return rawComplaints.map(c => ({ ...c, _id: c.id } as Complaint));
+    }, [rawComplaints]);
+
+    const stats = React.useMemo(() => {
+        if (!citizenComplaints) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        return {
+            total: citizenComplaints.length,
+            resolved: citizenComplaints.filter(c => c.status === 'Resolved').length,
+            pending: citizenComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
+            overdue: citizenComplaints.filter(c => c.status === 'Overdue').length,
+        }
+    }, [citizenComplaints]);
+
+    const recentActivity = React.useMemo(() => {
+        if (!citizenComplaints) return [];
+        // The createdAt field might be a server timestamp which is not a Date object until it's read.
+        // Let's create a defensive copy and convert to Date before sorting.
+        return [...citizenComplaints]
+            .map(c => ({...c, createdAt: new Date(c.createdAt)}))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .slice(0, 2);
+    }, [citizenComplaints]);
+
+
+    const isLoading = isUserLoading || isCitizenLoading || isComplaintsLoading;
     const citizenName = citizen?.fullName?.split(' ')[0] || 'Citizen';
 
     return (
@@ -64,7 +93,7 @@ export default function CitizenDashboardPage() {
                         <CardTitle>Your Complaints by Category</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <ComplaintsChart />
+                        <ComplaintsChart complaints={citizenComplaints} />
                     </CardContent>
                 </Card>
                 <Card>
@@ -72,26 +101,27 @@ export default function CitizenDashboardPage() {
                         <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-start gap-4">
-                            <div className="bg-secondary p-3 rounded-full">
-                                <FileText className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <p className="font-semibold">New Complaint Submitted</p>
-                                <p className="text-sm text-muted-foreground">#CN-583920 - Pothole on Main St</p>
-                                <p className="text-xs text-muted-foreground">2 days ago</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-4">
-                            <div className="bg-secondary p-3 rounded-full">
-                                <FileText className="h-5 w-5 text-green-500" />
-                            </div>
-                            <div>
-                                <p className="font-semibold">Complaint Resolved</p>
-                                <p className="text-sm text-muted-foreground">#CN-583712 - Streetlight Outage</p>
-                                <p className="text-xs text-muted-foreground">5 days ago</p>
-                            </div>
-                        </div>
+                        {isLoading ? (
+                             <div className="space-y-4">
+                                <Skeleton className="h-16 w-full" />
+                                <Skeleton className="h-16 w-full" />
+                             </div>
+                        ) : recentActivity.length > 0 ? (
+                            recentActivity.map(complaint => (
+                                <div className="flex items-start gap-4" key={complaint._id}>
+                                    <div className="bg-secondary p-3 rounded-full">
+                                        <FileText className={`h-5 w-5 ${complaint.status === 'Resolved' ? 'text-green-500' : 'text-primary'}`} />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">{complaint.status === 'Resolved' ? 'Complaint Resolved' : 'Complaint Submitted'}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{complaint.applicationNumber} - {complaint.title}</p>
+                                        <p className="text-xs text-muted-foreground"><FormattedDate date={complaint.createdAt} formatString="PP" /></p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No recent activity.</p>
+                        )}
                          <Button variant="outline" className="w-full" asChild>
                             <Link href="/dashboard/citizen/complaints">
                                 View All My Complaints <ArrowRight className="ml-2 h-4 w-4" />
