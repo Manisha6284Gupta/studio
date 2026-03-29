@@ -95,50 +95,35 @@ export function ComplaintForm() {
   }, []);
   
   useEffect(() => {
-    // General cleanup for camera stream
-    const cleanupStream = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
+    let stream: MediaStream | null = null;
+    const setupStream = async () => {
+        if (!isCameraOpen || !videoRef.current) return;
+        try {
+            const constraints = cameraMode === 'video'
+                ? { video: true, audio: true }
+                : { video: true };
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error accessing camera/mic:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Permission Denied',
+                description: 'Please enable camera and/or microphone permissions in your browser settings.',
+            });
+            setIsCameraOpen(false);
         }
     };
-    
-    if (isCameraOpen) {
-        const setupStream = async () => {
-            // Don't setup stream if we are just previewing a captured image/video
-            if (capturedImage || recordedVideoUrl) return;
-
-            try {
-                const constraints = cameraMode === 'video'
-                    ? { video: true, audio: true }
-                    : { video: true };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            } catch (error) {
-                console.error('Error accessing camera/mic:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Permission Denied',
-                    description: 'Please enable camera and/or microphone permissions in your browser settings.',
-                });
-                setIsCameraOpen(false);
-            }
-        };
-
-        setupStream();
-    } else {
-        cleanupStream();
-    }
-    
-    // Ensure stream is stopped when component unmounts while modal is open
+    setupStream();
     return () => {
-      cleanupStream();
+      stream?.getTracks().forEach(track => track.stop());
+      if (videoRef.current) {
+          videoRef.current.srcObject = null;
+      }
     };
-
-}, [isCameraOpen, cameraMode, capturedImage, recordedVideoUrl, toast]);
+  }, [isCameraOpen, cameraMode, toast]);
 
 
   const handleMicClick = () => {
@@ -810,14 +795,36 @@ export function ComplaintForm() {
                    {(capturedImage || recordedVideoUrl) && <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>}
               </AlertDialogHeader>
               <div className="relative bg-black rounded-lg overflow-hidden border">
-                  {capturedImage ? (
-                      <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
-                  ) : recordedVideoUrl ? (
-                      <video src={recordedVideoUrl} controls autoPlay muted playsInline className="w-full aspect-video" />
-                  ) : (
-                      <video ref={videoRef} className="w-full aspect-video" autoPlay muted playsInline />
-                  )}
-                  {isRecording && <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>}
+                {capturedImage ? (
+                    <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
+                ) : (
+                    <>
+                        <video
+                            ref={videoRef}
+                            className={cn(
+                                "w-full aspect-video",
+                                recordedVideoUrl && "hidden"
+                            )}
+                            autoPlay
+                            muted
+                            playsInline
+                        />
+                        {recordedVideoUrl && (
+                            <video
+                                src={recordedVideoUrl}
+                                className={cn(
+                                    "w-full aspect-video",
+                                    !recordedVideoUrl && "hidden"
+                                )}
+                                controls
+                                autoPlay
+                                muted
+                                playsInline
+                            />
+                        )}
+                    </>
+                )}
+                {isRecording && <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>}
               </div>
               <AlertDialogFooter>
                     {cameraMode === 'photo' ? (
