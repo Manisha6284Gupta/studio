@@ -254,12 +254,12 @@ export function ComplaintForm() {
       
       const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
       
-      form.setValue("category", result.category)
-      form.setValue("priority", result.priority)
-      form.setValue("severity", result.severity)
-      form.setValue("tags", result.tags.join(", "))
+      form.setValue("category", result.category, { shouldValidate: true });
+      form.setValue("priority", result.priority, { shouldValidate: true });
+      form.setValue("severity", result.severity, { shouldValidate: true });
+      form.setValue("tags", result.tags.join(", "), { shouldValidate: true });
       if (result.deadline) {
-        form.setValue("deadline", new Date(result.deadline))
+        form.setValue("deadline", new Date(result.deadline), { shouldValidate: true });
       }
 
       toast({
@@ -661,7 +661,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Category</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled>
+                              <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a category" />
@@ -685,7 +685,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Priority</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled>
+                              <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a priority" />
@@ -707,7 +707,7 @@ export function ComplaintForm() {
                           render={({ field }) => (
                               <FormItem>
                               <FormLabel>Severity</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled>
+                              <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
                                   <SelectTrigger>
                                       <SelectValue placeholder="AI will suggest a severity" />
@@ -739,7 +739,6 @@ export function ComplaintForm() {
                                           "w-full pl-3 text-left font-normal",
                                           !field.value && "text-muted-foreground"
                                       )}
-                                      disabled
                                       >
                                       {field.value ? (
                                           format(field.value, "PPP")
@@ -773,7 +772,7 @@ export function ComplaintForm() {
                               <FormItem>
                               <FormLabel>Suggested Tags</FormLabel>
                               <FormControl>
-                                  <Input placeholder="AI will suggest tags" {...field} disabled />
+                                  <Input placeholder="AI will suggest tags" {...field} />
                               </FormControl>
                               <FormDescription>Comma-separated tags.</FormDescription>
                               <FormMessage />
@@ -814,7 +813,7 @@ export function ComplaintForm() {
                   {capturedImage ? (
                       <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
                   ) : recordedVideoUrl ? (
-                      <video src={recordedVideoUrl} controls autoPlay className="w-full aspect-video" />
+                      <video src={recordedVideoUrl} controls autoPlay muted playsInline className="w-full aspect-video" />
                   ) : (
                       <video ref={videoRef} className="w-full aspect-video" autoPlay muted playsInline />
                   )}
