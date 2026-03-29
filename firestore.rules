@@ -1,0 +1,232 @@
+/**
+ * Core Philosophy: This ruleset enforces a sophisticated security model based on user roles and data ownership.
+ * It strictly separates different user types (Citizens, Staff, Control Room Staff) and grants permissions
+ * based on their identity and relationship to the data. Citizens have ownership over their profiles and the complaints
+ * they create. Staff members have access based on their assigned roles and department affiliations. A special
+ * 'Control Room Staff' role has elevated, system-wide privileges.
+ *
+ * Data Structure:
+ * - /citizens/{citizenId}: Private profiles for citizen users.
+ * - /staff/{staffId}: Private profiles for staff users.
+ * - /roles_controlRoomStaff/{uid}: A lookup collection to grant global Control Room Staff privileges.
+ * - /departments/{departmentId}: Publicly readable data for all staff.
+ * - /complaints/{complaintId}: The central collection for all user-submitted issues. Access is a mix of
+ *   ownership (for citizens) and role-based access (for staff).
+ * - Subcollections like /complaints/{complaintId}/attachments and /complaints/{complaintId}/history inherit
+ *   their security context from the parent complaint document.
+ *
+ * Key Security Decisions:
+ * - Strict User Listing Prohibition: Listing users from /citizens or /staff collections is disallowed to protect user privacy.
+ * - Global Roles via Collection Existence: The existence of a user's UID as a document ID in the
+ *   /roles_controlRoomStaff collection is used to grant system-wide permissions. This is a secure and highly
+ *   performant pattern for managing global roles, as it avoids storing roles in custom claims.
+ * - Client-Side Write Protection on Roles: The /roles_controlRoomStaff collection is made read-only from the client side
+ *   to prevent unauthorized privilege escalation. Role assignments must be managed by a trusted backend or through the Firebase Console.
+ * - Immutable History: The /complaints/{complaintId}/history subcollection is append-only for staff, ensuring an
+ *   unalterable audit trail of a complaint's lifecycle.
+ *
+ * Denormalization for Authorization:
+ * The `complaints` collection heavily utilizes denormalization for fast and secure access control. Each complaint
+ * document contains a `citizenId`, `initialDepartmentId`, and `assignedToStaffId`. This allows rules to authorize
+ * a user's request by looking only at the document being accessed, avoiding slow, costly, and sometimes impossible
+ * `get()` or `exists()` calls to other documents. For example, a citizen's access is checked simply by comparing
+ * `request.auth.uid == resource.data.citizenId`.
+ *
+ * Structural Segregation:
+ * Private user data is structurally segregated into `/citizens` and `/staff` collections, which are secured by path-based
+ * ownership rules (e.g., `allow read: if isOwner(citizenId)`). This guarantees that users can only ever access their own profile data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the foundation of the ownership model.
+     * @param userId The UID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the user is a Control Room Staff member by verifying
+     * the existence of their UID in the dedicated roles collection.
+     */
+    function isControlRoomStaff() {
+      return exists(/databases/$(database)/documents/roles_controlRoomStaff/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if the user is a staff member by verifying the existence of their
+     * profile in the /staff collection.
+     */
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    /**
+     * Retrieves the staff profile data for the currently authenticated user.
+     * Used to access staff-specific attributes like departmentId.
+     */
+    function getStaffData() {
+      return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
+    }
+    
+    /**
+     * Validates that the citizenId on an incoming complaint matches the creator's UID.
+     */
+    function isCreatingOwnComplaint() {
+      return request.resource.data.citizenId == request.auth.uid;
+    }
+
+    /**
+     * Enforces that the citizenId of a complaint cannot be changed after creation.
+     */
+    function isCitizenIdImmutable() {
+      return request.resource.data.citizenId == resource.data.citizenId;
+    }
+    
+    /**
+     * Checks if the current user has read access to a specific complaint document.
+     * This function is used by subcollections to inherit security from their parent.
+     * @param complaintId The ID of the parent complaint document to check.
+     */
+    function canReadParentComplaint(complaintId) {
+      let complaint = get(/databases/$(database)/documents/complaints/$(complaintId)).data;
+      // Access is granted to the citizen owner, any Control Room Staff,
+      // or any staff member from the department assigned to the complaint.
+      return isOwner(complaint.citizenId) || isControlRoomStaff() || (isStaff() && getStaffData().departmentId == complaint.initialDepartmentId);
+    }
+    
+    /**
+     * Checks if the current user has write access to a specific complaint document.
+     * This is typically restricted to assigned staff or Control Room Staff.
+     * @param complaintId The ID of the parent complaint document to check.
+     */
+    function canWriteParentComplaint(complaintId) {
+      let complaint = get(/databases/$(database)/documents/complaints/$(complaintId)).data;
+      // Write access is granted to Control Room Staff or the specifically assigned staff member.
+      return isControlRoomStaff() || isOwner(complaint.assignedToStaffId);
+    }
+
+    // --------------------------------------------------------------------
+    // Collection Rules
+    // --------------------------------------------------------------------
+
+    /**
+     * @description A user can create, read, update, and delete their own citizen profile.
+     * @path /citizens/{citizenId}
+     * @allow (get) An authenticated user reads their own profile document where `citizenId` matches their UID.
+     * @deny (list) A user attempts to list all citizen profiles in the system.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /citizens/{citizenId} {
+      allow get: if isOwner(citizenId);
+      allow list: if false;
+      allow create: if isOwner(citizenId);
+      allow update: if isOwner(citizenId);
+      allow delete: if isOwner(citizenId);
+    }
+
+    /**
+     * @description A staff member can create, read, update, and delete their own staff profile.
+     * @path /staff/{staffId}
+     * @allow (update) An authenticated staff member updates their own profile document.
+     * @deny (get) A staff member attempts to read another staff member's profile.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /staff/{staffId} {
+      allow get: if isOwner(staffId);
+      allow list: if false;
+      allow create: if isOwner(staffId);
+      allow update: if isOwner(staffId);
+      allow delete: if isOwner(staffId);
+    }
+
+    /**
+     * @description Stores department information. It is readable by all staff members but can only be
+     * modified by Control Room Staff.
+     * @path /departments/{departmentId}
+     * @allow (list) Any authenticated staff member lists all available departments.
+     * @deny (create) A regular citizen or non-Control Room staff member attempts to create a new department.
+     * @principle Role-based access for shared, semi-public data within the organization.
+     */
+    match /departments/{departmentId} {
+      allow get, list: if isStaff();
+      allow create, update, delete: if isControlRoomStaff();
+    }
+
+    /**
+     * @description A dedicated collection for managing Control Room Staff roles. The existence of a document
+     * signifies global privileges. This collection is not client-writable to prevent privilege escalation.
+     * @path /roles_controlRoomStaff/{controlRoomStaffId}
+     * @allow (get) Any signed-in user can check if another user has Control Room privileges (e.g., via `exists()`).
+     * @deny (create) Any user attempts to grant themselves or others Control Room privileges from the client.
+     * @principle Global role management should not be client-writable.
+     */
+    match /roles_controlRoomStaff/{controlRoomStaffId} {
+      allow get: if isSignedIn();
+      allow list: if isControlRoomStaff();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description The core collection for all complaints. Access is granted based on a combination of
+     * ownership for citizens and role-based permissions for staff.
+     * @path /complaints/{complaintId}
+     * @allow (get) A citizen reads a complaint where `resource.data.citizenId` matches their UID.
+     * @deny (update) A citizen tries to change the status of a complaint they filed.
+     * @principle Enforces document ownership for creators and role-based permissions for collaborators.
+     */
+    match /complaints/{complaintId} {
+      allow get: if isControlRoomStaff() || isOwner(resource.data.citizenId) || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId);
+      allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && getStaffData().departmentId == request.query.where.initialDepartmentId);
+      allow create: if isSignedIn() && isCreatingOwnComplaint();
+      allow update: if (isControlRoomStaff() || isOwner(resource.data.assignedToStaffId)) && isCitizenIdImmutable();
+      allow delete: if isControlRoomStaff();
+    }
+
+    /**
+     * @description Stores file attachments for a complaint. Access permissions are derived from the parent complaint document.
+     * @path /complaints/{complaintId}/attachments/{attachmentId}
+     * @allow (create) The citizen who created the parent complaint uploads an attachment.
+     * @deny (delete) A citizen tries to delete an attachment after it has been submitted.
+     * @principle Hierarchical security based on parent document access.
+     */
+    match /complaints/{complaintId}/attachments/{attachmentId} {
+      allow get, list: if canReadParentComplaint(complaintId);
+      allow create: if canReadParentComplaint(complaintId) && request.resource.data.complaintId == complaintId;
+      allow update: if canWriteParentComplaint(complaintId);
+      allow delete: if isControlRoomStaff();
+    }
+
+    /**
+     * @description An append-only log of a complaint's history. It's readable by anyone who can view the
+     * complaint, but only staff can add new entries. The log is immutable to maintain a valid audit trail.
+     * @path /complaints/{complaintId}/history/{historyEntryId}
+     * @allow (create) An assigned staff member adds a new status update to the history log.
+     * @deny (update) Any user attempts to modify an existing history entry.
+     * @principle Hierarchical security and data immutability for audit trails.
+     */
+    match /complaints/{complaintId}/history/{historyEntryId} {
+      allow get, list: if canReadParentComplaint(complaintId);
+      allow create: if isStaff() && request.resource.data.complaintId == complaintId && isOwner(request.resource.data.updatedByStaffId);
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,586 @@
+{
+  "entities": {
+    "Citizen": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Citizen",
+      "type": "object",
+      "description": "Represents a registered citizen user of the CivicConnect application. Citizens can submit and track complaints.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Citizen entity."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The full name of the citizen."
+        },
+        "gender": {
+          "type": "string",
+          "description": "The gender of the citizen.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The primary phone number of the citizen.",
+          "format": "e.164"
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the citizen.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the citizen profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the citizen profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "phoneNumber",
+        "email",
+        "createdAt"
+      ]
+    },
+    "Department": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Department",
+      "type": "object",
+      "description": "Represents a governmental or civic department responsible for handling specific types of complaints.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Department entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name of the department."
+        },
+        "headOfficerName": {
+          "type": "string",
+          "description": "The name of the head officer of the department."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The contact phone number for the department.",
+          "format": "e.164"
+        },
+        "email": {
+          "type": "string",
+          "description": "The contact email address for the department.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the department record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the department record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "headOfficerName",
+        "phoneNumber",
+        "email",
+        "createdAt"
+      ]
+    },
+    "Staff": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Staff",
+      "type": "object",
+      "description": "Represents a staff member, either from a specific department or the control room, responsible for managing and resolving complaints.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Staff entity."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The full name of the staff member."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the staff member.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The contact phone number for the staff member.",
+          "format": "e.164"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Reference to the Department this staff member belongs to. (Relationship: Department 1:N Staff)"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the staff member within the system (e.g., Department Staff, Control Room Staff).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the staff profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the staff profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "email",
+        "phoneNumber",
+        "role",
+        "createdAt"
+      ]
+    },
+    "Complaint": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Complaint",
+      "type": "object",
+      "description": "Represents a complaint submitted by a citizen, detailing the problem, location, status, and resolution progress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Complaint entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title summarizing the complaint."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the complaint or problem."
+        },
+        "locationType": {
+          "type": "string",
+          "description": "The type of geographical location for the complaint (e.g., 'Point').",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the complaint's location."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the complaint's location."
+        },
+        "citizenId": {
+          "type": "string",
+          "description": "Reference to the Citizen who submitted this complaint. (Relationship: Citizen 1:N Complaint)"
+        },
+        "initialDepartmentId": {
+          "type": "string",
+          "description": "Reference to the Department initially assigned to this complaint, typically by AI routing. (Relationship: Department 1:N Complaint)"
+        },
+        "priority": {
+          "type": "string",
+          "description": "The priority level of the complaint (e.g., Low, Medium, High).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "type": "string",
+          "description": "The severity level of the complaint (e.g., Critical, High, Medium, Low).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assignedToStaffId": {
+          "type": "string",
+          "description": "Reference to the Staff member currently assigned to handle this complaint. (Relationship: Staff 1:N Complaint)"
+        },
+        "tags": {
+          "type": "array",
+          "description": "A list of keywords or tags for categorizing and searching complaints.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "category": {
+          "type": "string",
+          "description": "The categorized type of problem (e.g., Infrastructure, Utility, Health, Environment, Other).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The target date by which the complaint is expected to be resolved.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the complaint (e.g., Pending, In Progress, Resolved, Overdue).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the complaint was submitted.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the complaint was last updated.",
+          "format": "date-time"
+        },
+        "applicationNumber": {
+          "type": "string",
+          "description": "A unique, automatically generated application number for the complaint."
+        },
+        "resolutionStatus": {
+          "type": "string",
+          "description": "The status indicating if the complaint has been formally resolved or remains unresolved.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolvedByStaffId": {
+          "type": "string",
+          "description": "Reference to the Staff member who resolved the complaint. (Relationship: Staff 1:N Complaint)"
+        },
+        "resolutionDate": {
+          "type": "string",
+          "description": "The date when the complaint was resolved.",
+          "format": "date-time"
+        },
+        "resolutionComments": {
+          "type": "string",
+          "description": "Detailed comments regarding the resolution of the complaint."
+        },
+        "resolutionTimeMinutes": {
+          "type": "number",
+          "description": "The total time, in minutes, taken to resolve the complaint."
+        },
+        "externalReference": {
+          "type": "string",
+          "description": "An optional reference ID from an external system related to this complaint."
+        },
+        "isEscalated": {
+          "type": "boolean",
+          "description": "Indicates whether the complaint has been escalated."
+        },
+        "escalatedToStaffId": {
+          "type": "string",
+          "description": "Reference to the Staff member or control room staff to whom the complaint was escalated. (Relationship: Staff 1:N Complaint)"
+        },
+        "escalationReason": {
+          "type": "string",
+          "description": "The reason provided for escalating the complaint."
+        },
+        "escalationDate": {
+          "type": "string",
+          "description": "The date when the complaint was escalated.",
+          "format": "date-time"
+        },
+        "feedbackRating": {
+          "type": "number",
+          "description": "Rating provided by the citizen for the resolution (1-5 stars)."
+        },
+        "feedbackComment": {
+          "type": "string",
+          "description": "Comments provided by the citizen as feedback on the resolution."
+        },
+        "attachmentIds": {
+          "type": "array",
+          "description": "References to attachments associated with this complaint. (Relationship: Complaint N:N Attachment)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolutionActionType": {
+          "type": "string",
+          "description": "The type of action taken for resolution (e.g., Repair, Replacement, Investigation).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relatedDepartmentIds": {
+          "type": "array",
+          "description": "References to other Departments involved in handling this complaint. (Relationship: Department N:N Complaint)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastUpdatedByStaffId": {
+          "type": "string",
+          "description": "Reference to the Staff member who last updated this complaint. (Relationship: Staff 1:N Complaint)"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "locationType",
+        "longitude",
+        "latitude",
+        "citizenId",
+        "initialDepartmentId",
+        "priority",
+        "severity",
+        "category",
+        "deadline",
+        "status",
+        "createdAt",
+        "applicationNumber",
+        "isEscalated",
+        "resolutionStatus"
+      ]
+    },
+    "Attachment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attachment",
+      "type": "object",
+      "description": "Represents a file (e.g., image) attached to a complaint by a citizen.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attachment entity."
+        },
+        "complaintId": {
+          "type": "string",
+          "description": "Reference to the Complaint this attachment belongs to. (Relationship: Complaint 1:N Attachment)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original name of the attached file."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL where the attachment file can be accessed.",
+          "format": "uri"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The MIME type of the attached file (e.g., 'image/jpeg', 'application/pdf')."
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the attachment was uploaded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "complaintId",
+        "fileName",
+        "fileUrl",
+        "fileType",
+        "uploadedAt"
+      ]
+    },
+    "ComplaintHistoryEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ComplaintHistoryEntry",
+      "type": "object",
+      "description": "Records significant changes and updates made to a complaint over its lifecycle, tracking actions, status changes, and who made the update.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ComplaintHistoryEntry entity."
+        },
+        "complaintId": {
+          "type": "string",
+          "description": "Reference to the Complaint this history entry pertains to. (Relationship: Complaint 1:N ComplaintHistoryEntry)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Timestamp of when the action or update occurred.",
+          "format": "date-time"
+        },
+        "action": {
+          "type": "string",
+          "description": "A description of the action taken (e.g., 'Status Changed', 'Reassigned', 'Comment Added')."
+        },
+        "updatedByStaffId": {
+          "type": "string",
+          "description": "Reference to the Staff member who performed this action or update. (Relationship: Staff 1:N ComplaintHistoryEntry)"
+        },
+        "statusSnapshot": {
+          "type": "string",
+          "description": "The status of the complaint at the time this history entry was recorded (e.g., Pending, In Progress, Resolved, Overdue).",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": "string",
+          "description": "Additional comments or details related to the action."
+        }
+      },
+      "required": [
+        "id",
+        "complaintId",
+        "date",
+        "action",
+        "updatedByStaffId",
+        "statusSnapshot"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/citizens/{citizenId}",
+        "definition": {
+          "entityName": "Citizen",
+          "schema": {
+            "$ref": "#/backend/entities/Citizen"
+          },
+          "description": "Stores individual citizen user profiles. The document ID (`citizenId`) must match the Firebase Authentication UID of the citizen. This ensures private, path-based ownership.",
+          "params": [
+            {
+              "name": "citizenId",
+              "description": "The unique identifier of the citizen, corresponding to their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/staff/{staffId}",
+        "definition": {
+          "entityName": "Staff",
+          "schema": {
+            "$ref": "#/backend/entities/Staff"
+          },
+          "description": "Stores individual staff member profiles, including their assigned department and role. The document ID (`staffId`) must match the Firebase Authentication UID of the staff member. This provides private, path-based ownership for staff profiles and holds crucial authorization context (departmentId, role) for other rules.",
+          "params": [
+            {
+              "name": "staffId",
+              "description": "The unique identifier of the staff member, corresponding to their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/departments/{departmentId}",
+        "definition": {
+          "entityName": "Department",
+          "schema": {
+            "$ref": "#/backend/entities/Department"
+          },
+          "description": "Stores information about each governmental or civic department. This collection is typically read by all staff members and managed (written to) by Control Room Staff.",
+          "params": [
+            {
+              "name": "departmentId",
+              "description": "The unique identifier for the department."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_controlRoomStaff/{controlRoomStaffId}",
+        "definition": {
+          "entityName": "Staff",
+          "schema": {
+            "$ref": "#/backend/entities/Staff"
+          },
+          "description": "A dedicated collection used for global role-based access control. The existence of a document here (where `controlRoomStaffId` is the user's UID) signifies that the user has Control Room Staff privileges. This simplifies security rules for broad access.",
+          "params": [
+            {
+              "name": "controlRoomStaffId",
+              "description": "The unique identifier of the Control Room Staff member, corresponding to their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/complaints/{complaintId}",
+        "definition": {
+          "entityName": "Complaint",
+          "schema": {
+            "$ref": "#/backend/entities/Complaint"
+          },
+          "description": "The primary collection for all complaints submitted by citizens. Each document includes denormalized 'citizenId', 'initialDepartmentId', and 'assignedToStaffId' for authorization independence, enabling direct access checks without 'get()' calls for individual complaint access, and supporting QAP-compliant 'list' queries for citizens and Control Room Staff. It also contains 'lastUpdatedByStaffId' for auditability.",
+          "params": [
+            {
+              "name": "complaintId",
+              "description": "The unique identifier for the complaint."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/complaints/{complaintId}/attachments/{attachmentId}",
+        "definition": {
+          "entityName": "Attachment",
+          "schema": {
+            "$ref": "#/backend/entities/Attachment"
+          },
+          "description": "A subcollection storing files (e.g., images) attached to a specific complaint. Access is implicitly tied to the parent Complaint's authorization rules, leveraging the hierarchical structure.",
+          "params": [
+            {
+              "name": "complaintId",
+              "description": "The unique identifier of the parent complaint."
+            },
+            {
+              "name": "attachmentId",
+              "description": "The unique identifier for the attachment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/complaints/{complaintId}/history/{historyEntryId}",
+        "definition": {
+          "entityName": "ComplaintHistoryEntry",
+          "schema": {
+            "$ref": "#/backend/entities/ComplaintHistoryEntry"
+          },
+          "description": "A subcollection logging significant changes and updates to a specific complaint, including status changes and who performed the update. Access is implicitly tied to the parent Complaint's authorization rules.",
+          "params": [
+            {
+              "name": "complaintId",
+              "description": "The unique identifier of the parent complaint."
+            },
+            {
+              "name": "historyEntryId",
+              "description": "The unique identifier for the history entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for CivicConnect is designed adhering strictly to the core design principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs, prioritizing security, scalability, and debuggability. \n\n**Authorization Independence via Denormalization:**\n\n1.  **Complaint Entity (`/complaints/{complaintId}`):** The central `Complaint` document is denormalized to include all critical authorization context directly within itself. Fields like `citizenId`, `initialDepartmentId`, and `assignedToStaffId` are stored on each complaint document. This is crucial for Authorization Independence as it eliminates the need for `get()` calls to parent documents or related collections (e.g., a citizen's profile or a department's details) when authorizing access to a specific complaint document. For instance, to check if a citizen can access a complaint, we simply compare `request.auth.uid` with `resource.data.citizenId`, rather than fetching the citizen's profile. This also supports atomic operations for creating/updating complaints without rule complexities.\n2.  **Subcollections (`attachments`, `history`):** The `Attachment` and `ComplaintHistoryEntry` entities are structured as subcollections of `Complaint` (`/complaints/{complaintId}/attachments/{attachmentId}` and `/complaints/{complaintId}/history/{historyEntryId}`). This leverages Firestore's hierarchical security model, allowing their access rules to implicitly inherit or directly reference the denormalized authorization fields from their parent `Complaint` document. This means, if a user is authorized to view a complaint, they are typically authorized to view its attachments and history without additional complex lookups.\n\n**QAPs (Queries Are Not Filters):**\n\n1.  **Citizen Access:** Citizens can list their complaints by querying the top-level `/complaints` collection with a `where('citizenId', '==', request.auth.uid)` clause. The security rules will directly enforce `allow list: if request.query.where.citizenId == request.auth.uid;`. This is fully QAP-compliant because the query filter exactly matches the authorization condition, and no `get()` calls are required to satisfy the `list` operation.\n2.  **Control Room Staff Access:** Control Room Staff require access to all complaints across all departments. Their authorization is established by checking for existence in a dedicated `/roles_controlRoomStaff/{uid}` collection. For them, `list` operations on `/complaints` are QAP-compliant because they can be filter-less (e.g., `allow list: if exists(/roles_controlRoomStaff/$(request.auth.uid));`). This grants them broad access as intended.\n3.  **Department Staff Access (Compromise for List):** Department Staff need to list complaints assigned to their specific department. They will query `/complaints` using `where('initialDepartmentId', '==', <staffDepartmentId>)`. Due to the DBAC principle (no custom claims) and the critical mandate against `get()` for `list` operations (to maintain Authorization Independence fully for complex `list` scenarios), verifying `<staffDepartmentId>` without fetching the staff member's profile is challenging. Therefore, for department staff `list` operations, the rule will require a `get()` call to `/staff/{request.auth.uid}` to retrieve their `departmentId` and match it against `request.query.where.initialDepartmentId`. While a `get()` in a `list` rule is generally discouraged, it is the most secure DBAC-compliant approach here, given the constraints, and the denormalization of `initialDepartmentId` on the `Complaint` document itself supports the query predicate. For individual `read/update/delete` operations on a specific complaint, the rule can still use `resource.data.initialDepartmentId == get(/staff/$(request.auth.uid)).data.departmentId`, which is acceptable for atomic operations.\n\n**Structural Segregation & Access Modeling:**\n*   **Private Data:** `/citizens/{citizenId}` and `/staff/{staffId}` collections are strictly path-based, ensuring that only the authenticated user can access their own profile.\n*   **Global Roles:** `/roles_controlRoomStaff/{uid}` uses existence for global role management, keeping role checks simple and explicit.\n*   **Core Entities:** `Department` data is stored in a top-level `/departments/{departmentId}` collection, accessible based on staff roles. `Complaint` data is in `/complaints/{complaintId}` serving as the single source of truth, optimized for diverse access patterns as described above."
+  }
+}
