@@ -50,8 +50,8 @@ export default function DepartmentDashboardPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-2xl sm:text-3xl font-headline font-bold">Department Dashboard</h1>
-                <p className="text-muted-foreground">Overview for the {departmentId} Department.</p>
+                <h1 className="text-2xl sm:text-3xl font-headline font-bold">{departmentId} Dashboard</h1>
+                <p className="text-muted-foreground">Monitor and manage all assigned complaints.</p>
             </div>
 
             <StatsCards stats={stats} />
