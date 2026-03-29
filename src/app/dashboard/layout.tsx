@@ -24,7 +24,7 @@ export default function DashboardLayout({
       <DashboardSidebar />
       <SidebarRail className="hidden md:flex" />
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="md:hidden" />
                 <div className="hidden font-semibold md:block">Dashboard</div>
@@ -65,9 +65,9 @@ export default function DashboardLayout({
                 </DropdownMenuContent>
             </DropdownMenu>
         </header>
-        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
