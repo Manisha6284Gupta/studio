@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,16 +11,53 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, User } from 'lucide-react';
 
 // In a real app, this would come from a user session/context
-const initialUser = {
+const citizenUser = {
     name: "John Doe",
     email: "john.doe@example.com",
     avatar: "https://picsum.photos/seed/avatar/100/100"
 };
 
+const departmentUser = {
+    name: "Department User",
+    email: "public.works@example.gov",
+    avatar: ""
+};
+
+const controlRoomUser = {
+    name: "Control Room Staff",
+    email: "control.room@example.gov",
+    avatar: ""
+};
+
+const getRoleFromPathname = (pathname: string) => {
+    if (pathname.startsWith('/dashboard/department')) return 'department';
+    if (pathname.startsWith('/dashboard/control-room')) return 'control-room';
+    return 'citizen';
+}
+
+const getUserForRole = (role: string) => {
+    switch (role) {
+        case 'department': return departmentUser;
+        case 'control-room': return controlRoomUser;
+        default: return citizenUser;
+    }
+}
+
 export default function SettingsPage() {
+    const pathname = usePathname();
+    const role = getRoleFromPathname(pathname);
+    const initialUser = getUserForRole(role);
+
     const [user, setUser] = useState(initialUser);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUser.avatar);
     const { toast } = useToast();
+
+    useEffect(() => {
+        const currentUser = getUserForRole(getRoleFromPathname(pathname));
+        setUser(currentUser);
+        setAvatarPreview(currentUser.avatar);
+    }, [pathname]);
+
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -63,7 +101,7 @@ export default function SettingsPage() {
                             <Avatar className="h-24 w-24 border">
                                 <AvatarImage src={avatarPreview || ''} alt={user.name} />
                                 <AvatarFallback>
-                                    <User className="h-10 w-10"/>
+                                    {user.name ? user.name.charAt(0) : <User className="h-10 w-10"/>}
                                 </AvatarFallback>
                             </Avatar>
                             <Button asChild size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 cursor-pointer">
