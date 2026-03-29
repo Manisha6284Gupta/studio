@@ -29,6 +29,23 @@ interface ComplaintsTableProps {
 export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTableProps) {
   const router = useRouter();
 
+  const handleViewDetails = (complaintId: string) => {
+    let path = '';
+    switch(view) {
+        case 'department':
+            path = `/dashboard/department/complaints/${complaintId}`;
+            break;
+        case 'control-room':
+            path = `/dashboard/control-room/complaints/${complaintId}`;
+            break;
+        case 'citizen':
+        default:
+            path = `/dashboard/citizen/complaints/${complaintId}`;
+            break;
+    }
+    router.push(path);
+  }
+
   return (
     <div className="relative h-[600px] overflow-auto border-y">
       <Table>
@@ -61,7 +78,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => router.push(`/dashboard/citizen/complaints/${complaint._id}`)}>
+                    <DropdownMenuItem onClick={() => handleViewDetails(complaint._id)}>
                       <Eye className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>

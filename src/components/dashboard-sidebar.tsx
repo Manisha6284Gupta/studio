@@ -27,12 +27,10 @@ const citizenNav = [
 
 const departmentNav = [
   { name: "Dashboard", href: "/dashboard/department", icon: LayoutDashboard },
-  { name: "Assigned Complaints", href: "/dashboard/department/complaints", icon: Building },
 ];
 
 const controlRoomNav = [
     { name: "Overview", href: "/dashboard/control-room", icon: LayoutDashboard },
-    { name: "All Complaints", href: "/dashboard/control-room/complaints", icon: Shield },
     { name: "Departments", href: "/dashboard/control-room/departments", icon: Building },
 ]
 
