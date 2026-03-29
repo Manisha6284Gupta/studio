@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ComplaintsChart } from "@/components/complaints-chart";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { mockComplaints } from "@/lib/data";
 import type { Complaint, ComplaintStatus } from "@/lib/types";
 import { isSameDay } from "date-fns";
@@ -38,31 +37,20 @@ export default function DepartmentDashboardPage() {
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-3 space-y-4">
-                <Card>
-                    <CardContent className="p-2">
-                        <ComplaintsMap locations={locations} />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-2">
-                        <ComplaintsTable complaints={filteredComplaints} />
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-2 space-y-4">
-                 <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Volume by Category</CardTitle>
-                        <CardDescription>Breakdown of complaint types.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-2 pt-0">
-                        <ComplaintsChart />
-                    </CardContent>
-                </Card>
-            </div>
+        <div className="space-y-4">
+            <Card>
+                <CardContent className="aspect-[16/9] p-0">
+                    <ComplaintsMap locations={locations} />
+                </CardContent>
+            </Card>
+
+            <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+            
+            <Card>
+                <CardContent className="p-2">
+                    <ComplaintsTable complaints={filteredComplaints} />
+                </CardContent>
+            </Card>
         </div>
     )
 }
