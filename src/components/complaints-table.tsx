@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import type { Complaint } from "@/lib/types";
 import { ComplaintStatusBadge } from "./complaint-status-badge";
-import { format } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,7 @@ import {
 import { Button } from "./ui/button";
 import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import FormattedDate from "./formatted-date";
 
 interface ComplaintsTableProps {
   complaints: Complaint[];
@@ -49,8 +49,8 @@ export function ComplaintsTable({ complaints }: ComplaintsTableProps) {
               <TableCell>
                 <ComplaintStatusBadge status={complaint.status} />
               </TableCell>
-              <TableCell>{format(new Date(complaint.createdAt), "PPP")}</TableCell>
-              <TableCell>{complaint.deadline ? format(new Date(complaint.deadline), "PPP") : 'N/A'}</TableCell>
+              <TableCell><FormattedDate date={complaint.createdAt} formatString="PPP" /></TableCell>
+              <TableCell>{complaint.deadline ? <FormattedDate date={complaint.deadline} formatString="PPP" /> : 'N/A'}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

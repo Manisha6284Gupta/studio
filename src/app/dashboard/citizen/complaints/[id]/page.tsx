@@ -1,3 +1,5 @@
+"use client";
+
 import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { ArrowLeft, Calendar, Check, Edit, MessageSquare, Star, User } from "luc
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { format } from 'date-fns';
+import FormattedDate from "@/components/formatted-date";
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -34,7 +36,7 @@ const HistoryItem = ({ item }: { item: ComplaintHistory }) => {
             <div>
                 <p className="font-semibold">{item.action} - <span className="font-normal text-muted-foreground">{item.status}</span></p>
                 <p className="text-sm text-muted-foreground">{item.comment}</p>
-                <p className="text-xs text-muted-foreground">{format(new Date(item.date), 'PPP p')}</p>
+                <p className="text-xs text-muted-foreground"><FormattedDate date={item.date} formatString="PPP p" /></p>
             </div>
         </div>
     )
@@ -74,7 +76,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                         <CardHeader>
                             <CardTitle>{complaint.title}</CardTitle>
                             <CardDescription>
-                                Submitted on {format(new Date(complaint.createdAt), 'PPP')}
+                                Submitted on <FormattedDate date={complaint.createdAt} formatString="PPP" />
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -109,7 +111,7 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                             <ComplaintStatusBadge status={complaint.status} />
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <DetailItem icon={<Calendar className="h-5 w-5"/>} label="Deadline" value={complaint.deadline ? format(new Date(complaint.deadline), 'PPP') : 'N/A'} />
+                             <DetailItem icon={<Calendar className="h-5 w-5"/>} label="Deadline" value={complaint.deadline ? <FormattedDate date={complaint.deadline} formatString="PPP" /> : 'N/A'} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Assigned Department" value={complaint.departmentId} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Priority" value={complaint.priority} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Severity" value={complaint.severity} />
