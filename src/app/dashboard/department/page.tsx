@@ -4,7 +4,6 @@ import * as React from "react";
 import { ComplaintsChart } from "@/components/complaints-chart";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
-import { StatsCards } from "@/components/stats-cards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockComplaints } from "@/lib/data";
 import type { Complaint, ComplaintStatus } from "@/lib/types";
@@ -17,15 +16,6 @@ export default function DepartmentDashboardPage() {
     const departmentId = "Public Works";
     const departmentComplaints = React.useMemo(() => mockComplaints.filter(c => c.departmentId === departmentId), []);
     const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>(departmentComplaints);
-
-    const stats = React.useMemo(() => {
-        return {
-            total: departmentComplaints.length,
-            resolved: departmentComplaints.filter(c => c.status === 'Resolved').length,
-            pending: departmentComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
-            overdue: departmentComplaints.filter(c => c.status === 'Overdue').length,
-        }
-    }, [departmentComplaints]);
     
     const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date }) => {
         let complaints = [...departmentComplaints];
@@ -49,35 +39,32 @@ export default function DepartmentDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <StatsCards stats={stats} />
+            <Card>
+                <CardContent className="space-y-4 pt-6">
+                    <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+                    <ComplaintsTable complaints={filteredComplaints} />
+                </CardContent>
+            </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-2">
-                    <CardContent className="space-y-4 pt-6">
-                       <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-                       <ComplaintsTable complaints={filteredComplaints} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Complaint Locations</CardTitle>
+                        <CardDescription>Hotspots for filtered complaints.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ComplaintsMap locations={locations} />
                     </CardContent>
                 </Card>
-                 <div className="space-y-8">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Complaint Locations</CardTitle>
-                            <CardDescription>Hotspots for filtered complaints.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <ComplaintsMap locations={locations} />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Volume by Category</CardTitle>
-                             <CardDescription>Breakdown of complaint types.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <ComplaintsChart />
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Volume by Category</CardTitle>
+                            <CardDescription>Breakdown of complaint types.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ComplaintsChart />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )
