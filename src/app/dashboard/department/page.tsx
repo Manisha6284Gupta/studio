@@ -44,17 +44,8 @@ export default function DepartmentDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div className="lg:col-span-3 space-y-8">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Complaint Locations</CardTitle>
-                            <CardDescription>Hotspots for filtered complaints.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-6 space-y-6">
                             <ComplaintsMap locations={locations} />
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent className="pt-6">
                             <ComplaintsTable complaints={filteredComplaints} />
                         </CardContent>
                     </Card>
