@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { CalendarIcon, Camera, Loader2, MapPin, Mic, RefreshCcw, Sparkles, Trash2, UploadCloud, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -55,10 +55,20 @@ type ComplaintFormValues = z.infer<typeof complaintFormSchema>
 export function ComplaintForm() {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
-  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  
   const [mediaFile, setMediaFile] = useState<{ dataUrl: string; type: 'image' | 'video' } | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Camera and video state
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo');
+  const [isRecording, setIsRecording] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<BlobPart[]>([]);
 
   const [isListening, setIsListening] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -67,13 +77,6 @@ export function ComplaintForm() {
   
   const [locationName, setLocationName] = useState<string | null>(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-
-
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.stop();
-    };
-  }, []);
 
   const form = useForm<ComplaintFormValues>({
     resolver: zodResolver(complaintFormSchema),
@@ -84,6 +87,59 @@ export function ComplaintForm() {
       location: undefined,
     },
   })
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+  
+  useEffect(() => {
+    // General cleanup for camera stream
+    const cleanupStream = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
+    
+    if (isCameraOpen) {
+        const setupStream = async () => {
+            // Don't setup stream if we are just previewing a captured image/video
+            if (capturedImage || recordedVideoUrl) return;
+
+            try {
+                const constraints = cameraMode === 'video'
+                    ? { video: true, audio: true }
+                    : { video: true };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (error) {
+                console.error('Error accessing camera/mic:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Permission Denied',
+                    description: 'Please enable camera and/or microphone permissions in your browser settings.',
+                });
+                setIsCameraOpen(false);
+            }
+        };
+
+        setupStream();
+    } else {
+        cleanupStream();
+    }
+    
+    // Ensure stream is stopped when component unmounts while modal is open
+    return () => {
+      cleanupStream();
+    };
+
+}, [isCameraOpen, cameraMode, capturedImage, recordedVideoUrl, toast]);
+
 
   const handleMicClick = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -316,57 +372,115 @@ export function ComplaintForm() {
         }
     };
 
-  const handleOpenCamera = async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            setIsCameraOpen(true);
+    const handleOpenCamera = (mode: 'photo' | 'video') => {
+        setMediaFile(null);
+        setCameraMode(mode);
+        setIsCameraOpen(true);
+    };
+
+    const handleCloseCamera = () => {
+        setCapturedImage(null);
+        if (recordedVideoUrl) {
+            URL.revokeObjectURL(recordedVideoUrl);
+            setRecordedVideoUrl(null);
         }
-    } catch (error) {
-        console.error('Error accessing camera:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
-    }
-  }
-
-  const handleCapture = () => {
-      if (videoRef.current && canvasRef.current) {
-          const video = videoRef.current;
-          const canvas = canvasRef.current;
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const context = canvas.getContext('2d');
-          if (context) {
-            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const imageDataUrl = canvas.toDataURL('image/png');
-            setMediaFile({ dataUrl: imageDataUrl, type: 'image' });
-            toast({ title: 'Image captured successfully!' });
-          }
-
-          const stream = video.srcObject as MediaStream;
-          if (stream) {
-              stream.getTracks().forEach(track => track.stop());
-          }
-          video.srcObject = null;
-          setIsCameraOpen(false);
-      }
-  };
-
-  const handleCloseCamera = () => {
-    if (videoRef.current) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setIsCameraOpen(false);
+    };
+    
+    // Photo capture functions
+    const handleCapture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            if (context) {
+                context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+                const imageDataUrl = canvas.toDataURL('image/png');
+                setCapturedImage(imageDataUrl);
+            }
         }
-        videoRef.current.srcObject = null;
-    }
-    setIsCameraOpen(false);
-  }
-  
+    };
+
+    const handleSavePhoto = () => {
+        if (capturedImage) {
+            setMediaFile({ dataUrl: capturedImage, type: 'image' });
+            toast({ title: 'Image saved successfully!' });
+            handleCloseCamera();
+        }
+    };
+
+    const handleRetakePhoto = () => {
+        setCapturedImage(null);
+    };
+
+    // Video recording functions
+    const handleStartRecording = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            recordedChunksRef.current = [];
+            
+            const mimeTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
+            const supportedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+            
+            if(!supportedMimeType) {
+                toast({ variant: 'destructive', title: 'Video Recording Not Supported', description: 'Your browser does not support the required video formats.' });
+                return;
+            }
+
+            mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: supportedMimeType });
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const blob = new Blob(recordedChunksRef.current, { type: supportedMimeType });
+                const videoUrl = URL.createObjectURL(blob);
+                setRecordedVideoUrl(videoUrl);
+                setIsRecording(false);
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+            toast({ title: 'Recording started...' });
+        }
+    };
+
+    const handleStopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const handleSaveVideo = () => {
+        if (recordedVideoUrl) {
+            fetch(recordedVideoUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => {
+                        const base64data = reader.result as string;
+                        setMediaFile({ dataUrl: base64data, type: 'video' });
+                        toast({ title: "Video saved successfully!" });
+                    };
+                });
+            handleCloseCamera();
+        }
+    };
+    
+    const handleRetakeVideo = () => {
+        if (recordedVideoUrl) {
+            URL.revokeObjectURL(recordedVideoUrl);
+        }
+        setRecordedVideoUrl(null);
+    };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -387,13 +501,7 @@ export function ComplaintForm() {
         }
     };
 
-
-  const handleRetake = () => {
-      setMediaFile(null);
-      handleOpenCamera();
-  };
-
-  const handleDeleteImage = () => {
+  const handleDeleteMedia = () => {
       setMediaFile(null);
   };
 
@@ -496,22 +604,27 @@ export function ComplaintForm() {
                             />
                           <FormItem>
                               <FormLabel>Attach Media</FormLabel>
-                              <div className={cn("w-full", mediaFile ? "hidden" : "grid grid-cols-1 sm:grid-cols-2 gap-4")}>
-                                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
+                              <div className={cn("w-full", mediaFile ? "hidden" : "grid grid-cols-1 sm:grid-cols-3 gap-4")}>
+                                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
                                       <div className="flex flex-col items-center justify-center">
                                           <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
                                           <p className="font-semibold">Click to upload</p>
                                           <p className="text-xs text-muted-foreground">Image or Video</p>
                                       </div>
                                       <input id="dropzone-file" type="file" className="hidden" accept="image/*,video/*" onChange={handleFileSelect}/>
-                                  </label>
-                                  <button type="button" onClick={handleOpenCamera} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
-                                      <div className="flex flex-col items-center justify-center">
-                                          <Camera className="w-8 h-8 mb-3 text-muted-foreground" />
-                                          <p className="font-semibold">Take a photo</p>
-                                          <p className="text-xs text-muted-foreground">Use your device camera</p>
-                                      </div>
-                                  </button>
+                                </label>
+                                <button type="button" onClick={() => handleOpenCamera('photo')} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <Camera className="w-8 h-8 mb-3 text-muted-foreground" />
+                                        <p className="font-semibold">Take a photo</p>
+                                    </div>
+                                </button>
+                                <button type="button" onClick={() => handleOpenCamera('video')} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <Video className="w-8 h-8 mb-3 text-muted-foreground" />
+                                        <p className="font-semibold">Record a video</p>
+                                    </div>
+                                </button>
                               </div>
                               {mediaFile && (
                                   <div className="mt-2 relative w-full max-w-md mx-auto">
@@ -523,12 +636,7 @@ export function ComplaintForm() {
                                               <video src={mediaFile.dataUrl} controls className="rounded-lg border w-full h-auto object-cover" />
                                           )}
                                           <div className="absolute top-2 right-2 flex gap-2">
-                                              {mediaFile.type === 'image' && (
-                                                <Button type="button" size="icon" variant="outline" className="bg-background/50 hover:bg-background" onClick={handleRetake}>
-                                                    <RefreshCcw className="h-4 w-4" />
-                                                </Button>
-                                              )}
-                                              <Button type="button" size="icon" variant="destructive" onClick={handleDeleteImage}>
+                                              <Button type="button" size="icon" variant="destructive" onClick={handleDeleteMedia}>
                                                   <Trash2 className="h-4 w-4" />
                                               </Button>
                                           </div>
@@ -697,14 +805,51 @@ export function ComplaintForm() {
       <AlertDialog open={isCameraOpen} onOpenChange={(open) => !open && handleCloseCamera()}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Live Camera</AlertDialogTitle>
+                  <AlertDialogTitle>
+                      {cameraMode === 'photo' ? 'Live Camera' : 'Record Video'}
+                  </AlertDialogTitle>
+                   {(capturedImage || recordedVideoUrl) && <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>}
               </AlertDialogHeader>
               <div className="bg-black rounded-lg overflow-hidden border">
-                  <video ref={videoRef} className="w-full aspect-video" autoPlay muted playsInline />
+                  {capturedImage ? (
+                      <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
+                  ) : recordedVideoUrl ? (
+                      <video src={recordedVideoUrl} controls autoPlay className="w-full aspect-video" />
+                  ) : (
+                      <video ref={videoRef} className="w-full aspect-video" autoPlay muted playsInline />
+                  )}
+                  {isRecording && <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>}
               </div>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCapture}>Capture Photo</AlertDialogAction>
+                    {cameraMode === 'photo' ? (
+                        capturedImage ? (
+                            <>
+                                <Button variant="outline" onClick={handleRetakePhoto}>Retake</Button>
+                                <AlertDialogAction onClick={handleSavePhoto}>Save Photo</AlertDialogAction>
+                            </>
+                        ) : (
+                            <>
+                                <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleCapture}>Capture Photo</AlertDialogAction>
+                            </>
+                        )
+                    ) : ( // video mode
+                        recordedVideoUrl ? (
+                            <>
+                                <Button variant="outline" onClick={handleRetakeVideo}>Retake</Button>
+                                <AlertDialogAction onClick={handleSaveVideo}>Save Video</AlertDialogAction>
+                            </>
+                        ) : isRecording ? (
+                            <AlertDialogAction onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Stop Recording
+                            </AlertDialogAction>
+                        ) : (
+                            <>
+                                <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleStartRecording}>Start Recording</AlertDialogAction>
+                            </>
+                        )
+                    )}
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
