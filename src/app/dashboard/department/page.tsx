@@ -1,24 +1,51 @@
+"use client";
+
+import * as React from "react";
 import { ComplaintsChart } from "@/components/complaints-chart";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
 import { StatsCards } from "@/components/stats-cards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockComplaints } from "@/lib/data";
+import type { Complaint, ComplaintStatus } from "@/lib/types";
+import { isSameDay } from "date-fns";
+import { DepartmentComplaintsFilters } from "@/components/department-complaints-filters";
 
 
 export default function DepartmentDashboardPage() {
     // In a real app, this data would be fetched for the logged-in department
     const departmentId = "Public Works";
-    const departmentComplaints = mockComplaints.filter(c => c.departmentId === departmentId);
+    const departmentComplaints = React.useMemo(() => mockComplaints.filter(c => c.departmentId === departmentId), []);
+    const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>(departmentComplaints);
 
-    const stats = {
-        total: departmentComplaints.length,
-        resolved: departmentComplaints.filter(c => c.status === 'Resolved').length,
-        pending: departmentComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
-        overdue: departmentComplaints.filter(c => c.status === 'Overdue').length,
-    }
+    const stats = React.useMemo(() => {
+        return {
+            total: departmentComplaints.length,
+            resolved: departmentComplaints.filter(c => c.status === 'Resolved').length,
+            pending: departmentComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
+            overdue: departmentComplaints.filter(c => c.status === 'Overdue').length,
+        }
+    }, [departmentComplaints]);
+    
+    const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date }) => {
+        let complaints = [...departmentComplaints];
 
-    const locations = departmentComplaints.map(c => c.location);
+        if (filters.applicationNumber) {
+            complaints = complaints.filter(c => c.applicationNumber.toLowerCase().includes(filters.applicationNumber!.toLowerCase()));
+        }
+
+        if (filters.status && filters.status !== 'all') {
+            complaints = complaints.filter(c => c.status === filters.status);
+        }
+        
+        if (filters.date) {
+            complaints = complaints.filter(c => isSameDay(new Date(c.createdAt), filters.date!));
+        }
+        
+        setFilteredComplaints(complaints);
+    }, [departmentComplaints]);
+    
+    const locations = React.useMemo(() => filteredComplaints.map(c => c.location), [filteredComplaints]);
 
     return (
         <div className="space-y-8">
@@ -33,11 +60,12 @@ export default function DepartmentDashboardPage() {
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>New Complaints</CardTitle>
-                            <CardDescription>The 5 most recent complaints assigned to your department.</CardDescription>
+                            <CardTitle>Assigned Complaints</CardTitle>
+                            <CardDescription>Filter and manage all complaints assigned to your department.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                           <ComplaintsTable complaints={departmentComplaints.slice(0, 5)} />
+                        <CardContent className="space-y-4">
+                           <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+                           <ComplaintsTable complaints={filteredComplaints} />
                         </CardContent>
                     </Card>
                 </div>
@@ -45,7 +73,7 @@ export default function DepartmentDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Complaint Locations</CardTitle>
-                            <CardDescription>Hotspots for your department's complaints.</CardDescription>
+                            <CardDescription>Hotspots for filtered complaints.</CardDescription>
                         </CardHeader>
                         <CardContent>
                            <ComplaintsMap locations={locations} />
