@@ -29,7 +29,7 @@ export function ComplaintsTable({ complaints }: ComplaintsTableProps) {
   const router = useRouter();
 
   return (
-    <div className="relative max-h-[600px] overflow-auto rounded-lg border shadow-sm">
+    <div className="relative h-[600px] overflow-y-auto border-y">
       <Table>
         <TableHeader>
           <TableRow>
