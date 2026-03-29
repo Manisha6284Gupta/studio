@@ -227,7 +227,8 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
                                 </div>
                                 <Button className="w-full"><MessageSquare className="mr-2 h-4 w-4"/> Submit Feedback</Button>
                             </CardContent>
-                        )}
+                        </Card>
+                    )}
                 </div>
 
             </div>
