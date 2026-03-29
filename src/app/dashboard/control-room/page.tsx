@@ -1,20 +1,107 @@
+'use client';
+
+import * as React from "react";
 import { DepartmentStatusChart } from "@/components/department-status-chart";
 import { ComplaintsFilters } from "@/components/complaints-filters";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
 import { StatsCards } from "@/components/stats-cards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockComplaints } from "@/lib/data";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, doc } from "firebase/firestore";
+import type { Complaint } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const PageSkeleton = () => (
+    <div className="space-y-8">
+        <Skeleton className="w-full aspect-video rounded-lg" />
+        <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+        </div>
+        <div className="space-y-4">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-52" />
+                </CardHeader>
+                <CardContent>
+                   <Skeleton className="h-[600px] w-full" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-3/4 mt-2" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-[350px] w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+)
 
 export default function ControlRoomDashboardPage() {
-    const stats = {
-        total: mockComplaints.length,
-        resolved: mockComplaints.filter(c => c.status === 'Resolved').length,
-        pending: mockComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
-        overdue: mockComplaints.filter(c => c.status === 'Overdue').length,
-    }
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
 
-    const locations = mockComplaints.map(c => c.location);
+    const controlRoomStaffRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'roles_controlRoomStaff', user.uid);
+    }, [firestore, user]);
+
+    const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc(controlRoomStaffRef);
+
+    const complaintsQuery = useMemoFirebase(() => {
+        // Only fetch if the user is a control room staff member
+        if (!controlRoomStaff) return null;
+        return query(collection(firestore, 'complaints'));
+    }, [firestore, controlRoomStaff]);
+    
+    const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
+
+    const complaints = React.useMemo(() => {
+        if (!rawComplaints) return [];
+        return rawComplaints.map(c => ({ ...c, _id: c.id } as Complaint));
+    }, [rawComplaints]);
+
+    const isLoading = isUserLoading || isRoleLoading || (controlRoomStaff && isComplaintsLoading);
+
+    // If a regular user (not control room staff) lands here, show an access denied message.
+    if (!isLoading && !controlRoomStaff) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold text-destructive">Access Denied</CardTitle>
+                        <CardDescription>You do not have permission to view this page.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p>This dashboard is for Control Room personnel only.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+    
+    const stats = React.useMemo(() => {
+        if (isLoading || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        return {
+            total: complaints.length,
+            resolved: complaints.filter(c => c.status === 'Resolved').length,
+            pending: complaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
+            overdue: complaints.filter(c => c.status === 'Overdue').length,
+        }
+    }, [complaints, isLoading]);
+
+    const locations = React.useMemo(() => complaints.map(c => c.location).filter(Boolean), [complaints]);
+    
+    if (isLoading) {
+        return <PageSkeleton />;
+    }
 
     return (
         <div className="-mt-4 sm:-mt-6 lg:-mt-8">
@@ -40,7 +127,7 @@ export default function ControlRoomDashboardPage() {
                             <CardContent className="px-4 sm:px-6 lg:px-8">
                                 <ComplaintsFilters />
                             </CardContent>
-                            <ComplaintsTable complaints={mockComplaints} view="control-room" />
+                            <ComplaintsTable complaints={complaints} view="control-room" />
                         </Card>
                     </div>
                     <div className="lg:col-span-2">
@@ -50,7 +137,7 @@ export default function ControlRoomDashboardPage() {
                                 <CardDescription>Breakdown of complaint statuses across all departments. The most active department is shown first.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DepartmentStatusChart complaints={mockComplaints} />
+                                <DepartmentStatusChart complaints={complaints} />
                             </CardContent>
                         </Card>
                     </div>
