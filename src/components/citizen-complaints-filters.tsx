@@ -9,30 +9,32 @@ import { Calendar as CalendarIcon, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import * as React from "react"
-import type { ComplaintCategory } from "@/lib/types"
+import type { ComplaintCategory, ComplaintStatus } from "@/lib/types"
 
 interface CitizenComplaintsFiltersProps {
-    onFilterChange: (filters: { applicationNumber?: string; category?: ComplaintCategory | 'all'; date?: Date }) => void;
+    onFilterChange: (filters: { applicationNumber?: string; category?: ComplaintCategory | 'all'; status?: ComplaintStatus | 'all'; date?: Date }) => void;
 }
 
 export function CitizenComplaintsFilters({ onFilterChange }: CitizenComplaintsFiltersProps) {
     const [applicationNumber, setApplicationNumber] = React.useState("");
     const [category, setCategory] = React.useState<ComplaintCategory | 'all'>('all');
+    const [status, setStatus] = React.useState<ComplaintStatus | 'all'>('all');
     const [date, setDate] = React.useState<Date | undefined>();
 
     React.useEffect(() => {
-        onFilterChange({ applicationNumber: applicationNumber || undefined, category, date });
-    }, [applicationNumber, category, date, onFilterChange]);
+        onFilterChange({ applicationNumber: applicationNumber || undefined, category, status, date });
+    }, [applicationNumber, category, status, date, onFilterChange]);
 
     const handleClear = () => {
         setApplicationNumber("");
         setCategory("all");
+        setStatus("all");
         setDate(undefined);
     }
 
     return (
-        <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-            <div className="relative flex-1">
+        <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                     placeholder="Search by Application #" 
@@ -55,6 +57,18 @@ export function CitizenComplaintsFilters({ onFilterChange }: CitizenComplaintsFi
                     <SelectItem value="Road Department">Road Department</SelectItem>
                     <SelectItem value="Electricity">Electricity</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select value={status} onValueChange={(value) => setStatus(value as ComplaintStatus | 'all')}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Resolved">Resolved</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
                 </SelectContent>
             </Select>
             <Popover>
