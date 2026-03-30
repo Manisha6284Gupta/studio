@@ -41,7 +41,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 import { useUser, useFirestore, errorEmitter, useStorage } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors"
-import { addDoc, collection, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, doc, updateDoc, type DocumentReference } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { Complaint } from "@/lib/types"
 
@@ -352,7 +352,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     }
   }
 
-  async function onSubmit(data: ComplaintFormValues) {
+async function onSubmit(data: ComplaintFormValues) {
     if (!user) {
         toast({
             variant: "destructive",
@@ -364,43 +364,53 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     
     setIsSubmitting(true);
 
-    let finalImageUrl = complaint?.imageUrl || null;
-    let finalVideoUrl = complaint?.videoUrl || null;
-    
-    try {
-        if (imageFile) {
-            toast({ title: "Uploading image..." });
-            const storageRef = ref(storage, `complaint-media/${user.uid}/${Date.now()}-${imageFile.name}`);
-            const snapshot = await uploadBytes(storageRef, imageFile);
-            finalImageUrl = await getDownloadURL(snapshot.ref);
-            toast({ title: "Image uploaded!" });
-        }
+    const handleFileUploads = async (docRef: DocumentReference) => {
+        const upload = async (file: File) => {
+            const storageRef = ref(storage, `complaint-media/${docRef.id}/${Date.now()}-${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            return getDownloadURL(snapshot.ref);
+        };
 
-        if (videoFile) {
-            toast({ title: "Uploading video..." });
-            const storageRef = ref(storage, `complaint-media/${user.uid}/${Date.now()}-${videoFile.name}`);
-            const snapshot = await uploadBytes(storageRef, videoFile);
-            finalVideoUrl = await getDownloadURL(snapshot.ref);
-            toast({ title: "Video uploaded!" });
+        try {
+            const updates: { imageUrl?: string | null, videoUrl?: string | null } = {};
+            let needsUpdate = false;
+
+            if (imageFile) {
+                updates.imageUrl = await upload(imageFile);
+                needsUpdate = true;
+            } else if (complaint && imagePreview === null) { 
+                updates.imageUrl = null;
+                needsUpdate = true;
+            }
+
+            if (videoFile) {
+                updates.videoUrl = await upload(videoFile);
+                needsUpdate = true;
+            } else if (complaint && videoPreview === null) {
+                updates.videoUrl = null;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                await updateDoc(docRef, updates);
+            }
+        } catch (uploadError) {
+            console.error("Background upload/update failed:", uploadError);
+            toast({
+                variant: "destructive",
+                title: "Media Upload Failed",
+                description: "Your complaint was saved, but the media upload failed. You can try editing the complaint to upload it again.",
+            });
         }
-    } catch (error: any) {
-        console.error("Error uploading file:", error);
-        toast({
-            variant: "destructive",
-            title: "File Upload Failed",
-            description: error.message || "Could not upload media. Please try again.",
-        });
-        setIsSubmitting(false);
-        return;
-    }
+    };
 
     if (complaint) {
-        // Edit mode
+        // --- EDIT MODE ---
         const complaintRef = doc(firestore, 'complaints', complaint._id);
-        const updatedComplaintData = {
+        const updatedTextData = {
             title: data.title,
             description: data.description,
-            ...(data.location && { location: data.location }),
+            location: data.location || null,
             initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
             priority: data.priority || "Medium",
             severity: data.severity || "Medium",
@@ -408,40 +418,34 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             deadline: data.deadline || null,
             tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
             updatedAt: serverTimestamp(),
-            imageUrl: finalImageUrl,
-            videoUrl: finalVideoUrl,
         };
 
-        updateDoc(complaintRef, updatedComplaintData)
-            .catch(error => {
-                const permissionError = new FirestorePermissionError({
-                    path: complaintRef.path,
-                    operation: 'update',
-                    requestResourceData: updatedComplaintData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                 if (error.code !== 'permission-denied') {
-                     toast({
-                        variant: "destructive",
-                        title: "Update Failed",
-                        description: error.message || "An unexpected error occurred.",
-                    });
-                }
-            });
-        
-        toast({
-            title: "Complaint Updated!",
-            description: `Complaint #${complaint.applicationNumber} has been updated.`,
-        });
-        router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+        try {
+            await updateDoc(complaintRef, updatedTextData);
 
+            toast({
+                title: "Complaint Updated!",
+                description: `The details for complaint #${complaint.applicationNumber} have been saved.`,
+            });
+            router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+
+            handleFileUploads(complaintRef); // Fire and forget
+
+        } catch (error: any) {
+            const permissionError = new FirestorePermissionError({ path: complaintRef.path, operation: 'update', requestResourceData: updatedTextData });
+            errorEmitter.emit('permission-error', permissionError);
+            if (error.code !== 'permission-denied') {
+                toast({ variant: "destructive", title: "Update Failed", description: error.message || "An unexpected error occurred." });
+            }
+            setIsSubmitting(false);
+        }
     } else {
-        // Create mode
+        // --- CREATE MODE ---
         const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
         const newComplaintData = {
             title: data.title,
             description: data.description,
-            ...(data.location && { location: data.location }),
+            location: data.location || null,
             citizenId: user.uid,
             initialDepartmentId: data.recommendedDepartment || data.category,
             priority: data.priority || "Medium",
@@ -453,10 +457,10 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             applicationNumber: applicationNumber,
             isEscalated: false,
             resolutionStatus: "Unresolved",
-            createdAt: serverTimestamp(),
+createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            imageUrl: finalImageUrl,
-            videoUrl: finalVideoUrl,
+            imageUrl: null,
+            videoUrl: null,
             history: [{
                 action: 'Complaint Submitted',
                 status: 'Pending',
@@ -466,33 +470,29 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             }]
         };
 
-        const complaintsCol = collection(firestore, 'complaints');
-        addDoc(complaintsCol, newComplaintData)
-            .catch(error => {
-                const permissionError = new FirestorePermissionError({
-                    path: complaintsCol.path,
-                    operation: 'create',
-                    requestResourceData: newComplaintData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                if (error.code !== 'permission-denied') {
-                     toast({
-                        variant: "destructive",
-                        title: "Submission Failed",
-                        description: error.message || "An unexpected error occurred.",
-                    });
-                }
+        try {
+            const complaintsCol = collection(firestore, 'complaints');
+            const docRef = await addDoc(complaintsCol, newComplaintData);
+
+            toast({
+                title: "Complaint Submitted!",
+                description: `Application number #${applicationNumber} has been generated.`,
             });
+            router.push('/dashboard/citizen/complaints');
 
-        toast({
-            title: "Complaint Submitted!",
-            description: `Application number #${applicationNumber} has been generated.`,
-        });
-        router.push('/dashboard/citizen/complaints');
+            handleFileUploads(docRef); // Fire and forget
+
+        } catch (error: any) {
+            const permissionError = new FirestorePermissionError({ path: 'complaints', operation: 'create', requestResourceData: newComplaintData });
+            errorEmitter.emit('permission-error', permissionError);
+            if (error.code !== 'permission-denied') {
+                toast({ variant: "destructive", title: "Submission Failed", description: error.message || "An unexpected error occurred." });
+            }
+            setIsSubmitting(false);
+        }
     }
+}
 
-    setIsSubmitting(false);
-  }
 
     const getAddressFromCoordinates = async (lat: number, lng: number) => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -714,13 +714,21 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     };
     
     const clearImage = () => {
-        if (imagePreview && imageFile) URL.revokeObjectURL(imagePreview);
+        if (imagePreview) {
+            if (imageFile) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        }
         setImageFile(null);
         setImagePreview(null);
     }
     
     const clearVideo = () => {
-        if (videoPreview && videoFile) URL.revokeObjectURL(videoPreview);
+        if (videoPreview) {
+            if (videoFile) {
+                URL.revokeObjectURL(videoPreview);
+            }
+        }
         setVideoFile(null);
         setVideoPreview(null);
     }
@@ -1094,7 +1102,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
               <AlertDialogFooter>
                     {cameraMode === 'photo' ? (
                         <>
-                            <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
+                            <Button variant="ghost" onClick={handleCloseCamera}>Cancel</Button>
                             <Button onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</Button>
                         </>
                     ) : ( // video mode
@@ -1109,7 +1117,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                             </Button>
                         ) : (
                             <>
-                                <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
+                                <Button variant="ghost" onClick={handleCloseCamera}>Cancel</Button>
                                 <Button onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</Button>
                             </>
                         )
