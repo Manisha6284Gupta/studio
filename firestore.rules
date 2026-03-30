@@ -118,7 +118,7 @@ service cloud.firestore {
     function canWriteParentComplaint(complaintId) {
       let complaint = get(/databases/$(database)/documents/complaints/$(complaintId)).data;
       // Write access is granted to Control Room Staff or the specifically assigned staff member.
-      return isControlRoomStaff() || isOwner(complaint.assignedToStaffId);
+      return isControlRoomStaff() || isOwner(complaint.assignedToStaffId) || (isStaff() && getStaffData().departmentId == complaint.initialDepartmentId);
     }
 
     // --------------------------------------------------------------------
@@ -196,7 +196,7 @@ service cloud.firestore {
       allow get: if isControlRoomStaff() || isOwner(resource.data.citizenId) || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId);
       allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && getStaffData().departmentId == request.query.where.initialDepartmentId);
       allow create: if isSignedIn() && isCreatingOwnComplaint();
-      allow update: if (isControlRoomStaff() || isOwner(resource.data.assignedToStaffId) || isOwner(resource.data.citizenId)) && isCitizenIdImmutable();
+      allow update: if (isControlRoomStaff() || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId) || isOwner(resource.data.citizenId)) && isCitizenIdImmutable();
       allow delete: if isControlRoomStaff() || isOwner(resource.data.citizenId);
     }
 
@@ -209,7 +209,7 @@ service cloud.firestore {
      */
     match /complaints/{complaintId}/attachments/{attachmentId} {
       allow get, list: if canReadParentComplaint(complaintId);
-      allow create: if canReadParentComplaint(complaintId) && request.resource.data.complaintId == complaintId;
+      allow create: if (canReadParentComplaint(complaintId) || canWriteParentComplaint(complaintId)) && request.resource.data.complaintId == complaintId;
       allow update: if canWriteParentComplaint(complaintId);
       allow delete: if isControlRoomStaff();
     }

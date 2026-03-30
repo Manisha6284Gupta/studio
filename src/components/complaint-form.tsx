@@ -386,7 +386,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 action: 'Complaint Submitted',
                 status: 'Pending',
                 comment: 'Citizen submitted the complaint.',
-                date: new Date().toISOString(),
+                date: new Date(),
                 updatedBy: user.uid
             }]
         };

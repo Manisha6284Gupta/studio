@@ -1,20 +1,25 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Complaint, ComplaintHistory } from "@/lib/types";
-import { ArrowLeft, Calendar, Check, User } from "lucide-react";
+import type { Complaint, ComplaintHistory, ComplaintStatus } from "@/lib/types";
+import { ArrowLeft, Calendar, Check, Loader2, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import FormattedDate from "@/components/formatted-date";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { doc, updateDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -108,6 +113,13 @@ export default function DepartmentComplaintDetailPage() {
     const id = params.id as string;
     const firestore = useFirestore();
 
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [newStatus, setNewStatus] = useState<ComplaintStatus | "">("");
+    const [comment, setComment] = useState("");
+    const [isUpdating, setIsUpdating] = useState(false);
+
+
     const complaintRef = useMemoFirebase(() => {
         if (!id || !firestore) return null;
         return doc(firestore, 'complaints', id);
@@ -119,6 +131,43 @@ export default function DepartmentComplaintDetailPage() {
         if (!rawComplaint) return null;
         return { ...rawComplaint, _id: rawComplaint.id } as Complaint;
     }, [rawComplaint]);
+
+     const handleStatusUpdate = async () => {
+        if (!newStatus) {
+            toast({ variant: "destructive", title: "Please select a status." });
+            return;
+        }
+        if (!user) {
+            toast({ variant: "destructive", title: "You must be logged in." });
+            return;
+        }
+
+        setIsUpdating(true);
+
+        const newHistoryEntry = {
+            action: "Status Changed",
+            status: newStatus,
+            comment: comment || `Status updated to ${newStatus}.`,
+            date: new Date(),
+            updatedBy: user.uid,
+        };
+
+        try {
+            await updateDoc(complaintRef!, {
+                status: newStatus,
+                history: arrayUnion(newHistoryEntry),
+                updatedAt: serverTimestamp(),
+            });
+            toast({ title: "Status Updated", description: "The complaint status has been successfully updated." });
+            setNewStatus("");
+            setComment("");
+        } catch (error: any) {
+            console.error("Error updating status:", error);
+            toast({ variant: "destructive", title: "Update Failed", description: error.message });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     if (isLoading) {
         return <ComplaintDetailSkeleton />;
@@ -196,6 +245,40 @@ export default function DepartmentComplaintDetailPage() {
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Assigned Department" value={complaint.initialDepartmentId} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Priority" value={complaint.priority} />
                              <DetailItem icon={<User className="h-5 w-5"/>} label="Severity" value={complaint.severity} />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Update Status</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="status-select">New Status</Label>
+                                <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ComplaintStatus)}>
+                                    <SelectTrigger id="status-select">
+                                        <SelectValue placeholder="Select new status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Pending">Pending</SelectItem>
+                                        <SelectItem value="In Progress">In Progress</SelectItem>
+                                        <SelectItem value="Resolved">Resolved</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="update-comment">Comment (Optional)</Label>
+                                <Textarea
+                                    id="update-comment"
+                                    placeholder="Add a comment about the status change..."
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                />
+                            </div>
+                            <Button onClick={handleStatusUpdate} disabled={isUpdating || !newStatus} className="w-full">
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Update Status
+                            </Button>
                         </CardContent>
                     </Card>
 
