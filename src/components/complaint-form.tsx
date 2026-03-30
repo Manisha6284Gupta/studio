@@ -31,7 +31,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { CalendarIcon, Camera, Loader2, MapPin, Mic, RefreshCcw, Sparkles, Trash2, UploadCloud, Video } from "lucide-react"
+import { CalendarIcon, Camera, Loader2, MapPin, Mic, RefreshCcw, Sparkles, StopCircle, Trash2, UploadCloud, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -587,6 +587,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 const videoUrl = URL.createObjectURL(blob);
                 setRecordedVideoUrl(videoUrl);
                 setIsRecording(false);
+                toast({ title: "Recording Finished", description: "You can now preview your video." });
             };
 
             mediaRecorderRef.current.start();
@@ -903,7 +904,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                                             )}
                                         >
                                             {field.value ? (
-                                            format(field.value, "PPP")
+                                            format(new Date(field.value), "PPP")
                                             ) : (
                                             <span>AI will suggest a date</span>
                                             )}
@@ -1025,13 +1026,13 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                                 <AlertDialogAction onClick={handleSaveVideo}>Save Video</AlertDialogAction>
                             </>
                         ) : isRecording ? (
-                            <AlertDialogAction onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90">
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Stop Recording
-                            </AlertDialogAction>
+                             <Button onClick={handleStopRecording} variant="destructive">
+                                <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+                            </Button>
                         ) : (
                             <>
                                 <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</AlertDialogAction>
+                                <Button onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</Button>
                             </>
                         )
                     )}
@@ -1042,3 +1043,5 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     </div>
   )
 }
+
+    
