@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from "react";
@@ -58,8 +59,7 @@ export default function ControlRoomDashboardPage() {
     const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc<{ uid: string }>(controlRoomStaffRef);
 
     const complaintsQuery = useMemoFirebase(() => {
-        // Only fetch if the user is authenticated and the role check is complete and they are control room staff.
-        if (!user || isRoleLoading || !controlRoomStaff?.uid) return null;
+        if (!user || isRoleLoading || !controlRoomStaff) return null;
         return query(collection(firestore, 'complaints'));
     }, [firestore, user, controlRoomStaff, isRoleLoading]);
     
@@ -76,25 +76,6 @@ export default function ControlRoomDashboardPage() {
         setFilteredComplaints(complaints);
     }, [complaints]);
 
-    const isLoading = isUserLoading || isRoleLoading;
-
-    // If role check is done and user is not control room staff, show access denied.
-    if (!isLoading && !controlRoomStaff) {
-        return (
-            <div className="flex h-full items-center justify-center">
-                <Card className="w-full max-w-md text-center">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold text-destructive">Access Denied</CardTitle>
-                        <CardDescription>You do not have permission to view this page.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p>This dashboard is for Control Room personnel only.</p>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-    
     const stats = React.useMemo(() => {
         if (isComplaintsLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0, escalated: 0 };
         return {
@@ -129,6 +110,24 @@ export default function ControlRoomDashboardPage() {
     }, [complaints]);
 
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter(Boolean), [filteredComplaints]);
+
+    const isLoading = isUserLoading || isRoleLoading;
+
+    if (!isLoading && !controlRoomStaff) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold text-destructive">Access Denied</CardTitle>
+                        <CardDescription>You do not have permission to view this page.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p>This dashboard is for Control Room personnel only.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
     
     if (isLoading || (controlRoomStaff && isComplaintsLoading)) {
         return <PageSkeleton />;

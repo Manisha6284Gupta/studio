@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -49,7 +50,6 @@ export default function DepartmentDashboardPage() {
     const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{ departmentId: string }>(staffRef);
     
     const complaintsQuery = useMemoFirebase(() => {
-        // Only fetch after user is loaded, we have a staff profile with a department ID.
         if (!user || isStaffLoading || !staffProfile?.departmentId) return null;
         return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', staffProfile.departmentId));
     }, [firestore, user, staffProfile, isStaffLoading]);
@@ -89,7 +89,6 @@ export default function DepartmentDashboardPage() {
 
     const isLoading = isUserLoading || isStaffLoading;
 
-    // If role check is done and user is not staff, show access denied.
     if (!isLoading && !staffProfile) {
         return (
             <div className="flex h-full items-center justify-center">
