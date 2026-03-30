@@ -155,23 +155,42 @@ export default function ControlRoomComplaintDetailPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-foreground">{complaint.description}</p>
-                            {complaint.image && (
-                                complaint.image.startsWith('data:image') ? (
+                            <div className="mt-4 flex flex-col gap-4">
+                                {complaint.imageUrl && (
                                     <Image
-                                        src={complaint.image}
-                                        alt="Complaint Media"
+                                        src={complaint.imageUrl}
+                                        alt="Complaint Image"
                                         width={400}
                                         height={300}
-                                        className="mt-4 rounded-lg w-full h-auto max-w-md"
+                                        className="rounded-lg w-full h-auto max-w-md"
                                     />
-                                ) : (
+                                )}
+                                {complaint.videoUrl && (
                                     <video
-                                        src={complaint.image}
+                                        src={complaint.videoUrl}
                                         controls
-                                        className="mt-4 rounded-lg w-full h-auto max-w-md"
+                                        className="rounded-lg w-full h-auto max-w-md"
                                     />
-                                )
-                            )}
+                                )}
+                                {/* Backward compatibility for old 'image' field */}
+                                {complaint.image && !complaint.imageUrl && !complaint.videoUrl && (
+                                    complaint.image.startsWith('data:image') ? (
+                                        <Image
+                                            src={complaint.image}
+                                            alt="Complaint Media"
+                                            width={400}
+                                            height={300}
+                                            className="rounded-lg w-full h-auto max-w-md"
+                                        />
+                                    ) : (
+                                        <video
+                                            src={complaint.image}
+                                            controls
+                                            className="rounded-lg w-full h-auto max-w-md"
+                                        />
+                                    )
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
 

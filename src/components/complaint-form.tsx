@@ -87,7 +87,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
   const { user } = useUser()
   const firestore = useFirestore()
   
-  const [mediaFile, setMediaFile] = useState<{ dataUrl: string; type: 'image' | 'video' } | null>(null);
+  const [imageFile, setImageFile] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<string | null>(null);
 
   // Camera and video state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -125,10 +126,20 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
   })
   
   useEffect(() => {
-    if (complaint?.image) {
-      setMediaFile({ dataUrl: complaint.image, type: complaint.image.startsWith('data:video') ? 'video' : 'image' });
+    if (complaint) {
+        setImageFile(complaint.imageUrl || null);
+        setVideoFile(complaint.videoUrl || null);
+        // For backward compatibility
+        if (complaint.image) {
+            if (complaint.image.startsWith('data:image') && !complaint.imageUrl) {
+                setImageFile(complaint.image);
+            } else if (complaint.image.startsWith('data:video') && !complaint.videoUrl) {
+                setVideoFile(complaint.image);
+            }
+        }
     } else {
-      setMediaFile(null);
+        setImageFile(null);
+        setVideoFile(null);
     }
   }, [complaint]);
 
@@ -286,8 +297,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     setIsAiLoading(true)
     try {
       const complaintInput: any = { title, description };
-      if (mediaFile && mediaFile.type === 'image') {
-        complaintInput.photoDataUri = mediaFile.dataUrl;
+      if (imageFile) {
+        complaintInput.photoDataUri = imageFile;
       }
       
       const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
@@ -333,7 +344,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     if (complaint) {
         // Edit mode
         const complaintRef = doc(firestore, 'complaints', complaint._id);
-        const updatedComplaintData = {
+        const updatedComplaintData: Record<string, any> = {
             title: data.title,
             description: data.description,
             ...(data.location && { location: data.location }),
@@ -344,7 +355,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             deadline: data.deadline || null,
             tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
             updatedAt: serverTimestamp(),
-            image: mediaFile?.dataUrl ?? null,
+            imageUrl: imageFile,
+            videoUrl: videoFile,
         };
 
         updateDoc(complaintRef, updatedComplaintData)
@@ -394,7 +406,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             resolutionStatus: "Unresolved",
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            image: mediaFile?.dataUrl ?? null,
+            imageUrl: imageFile,
+            videoUrl: videoFile,
             history: [{
                 action: 'Complaint Submitted',
                 status: 'Pending',
@@ -513,7 +526,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     };
 
     const handleOpenCamera = (mode: 'photo' | 'video') => {
-        setMediaFile(null);
         setHasCameraPermission(null);
         setRecordedVideoUrl(null);
         setCameraMode(mode);
@@ -544,13 +556,12 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
                 const imageDataUrl = canvas.toDataURL('image/png');
                 
-                setMediaFile({ dataUrl: imageDataUrl, type: 'image' });
-                handleCloseCamera();
-                
+                setImageFile(imageDataUrl);
                 toast({
                     title: "Photo Captured!",
                     description: "Your photo has been attached to the complaint.",
                 });
+                handleCloseCamera();
             }
         } else {
             toast({
@@ -611,7 +622,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     reader.readAsDataURL(blob);
                     reader.onloadend = () => {
                         const base64data = reader.result as string;
-                        setMediaFile({ dataUrl: base64data, type: 'video' });
+                        setVideoFile(base64data);
                         toast({ title: "Video saved successfully!" });
                     };
                 });
@@ -627,29 +638,26 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
         recordedChunksRef.current = [];
     };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
-                if(file.type.startsWith('image/')) {
-                    setMediaFile({ dataUrl, type: 'image' });
+                if(file.type.startsWith('image/') && type === 'image') {
+                    setImageFile(dataUrl);
                     toast({ title: 'Image uploaded successfully!' });
-                } else if (file.type.startsWith('video/')) {
-                    setMediaFile({ dataUrl, type: 'video' });
+                } else if (file.type.startsWith('video/') && type === 'video') {
+                    setVideoFile(dataUrl);
                     toast({ title: 'Video uploaded successfully!' });
                 } else {
-                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload an image or video file.' });
+                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a valid file for the selected type.' });
                 }
             };
             reader.readAsDataURL(file);
+             e.target.value = '';
         }
     };
-
-  const handleDeleteMedia = () => {
-      setMediaFile(null);
-  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -748,48 +756,55 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                                     </FormItem>
                                 )}
                             />
-                          <FormItem>
-                              <FormLabel>Attach Media</FormLabel>
-                              <div className={cn("w-full", mediaFile ? "hidden" : "grid grid-cols-1 sm:grid-cols-3 gap-4")}>
-                                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
-                                      <div className="flex flex-col items-center justify-center">
-                                          <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
-                                          <p className="font-semibold">Click to upload</p>
-                                          <p className="text-xs text-muted-foreground">Image or Video</p>
-                                      </div>
-                                      <input id="dropzone-file" type="file" className="hidden" accept="image/*,video/*" onChange={handleFileSelect}/>
-                                </label>
-                                <button type="button" onClick={() => handleOpenCamera('photo')} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <Camera className="w-8 h-8 mb-3 text-muted-foreground" />
-                                        <p className="font-semibold">Take a photo</p>
-                                    </div>
-                                </button>
-                                <button type="button" onClick={() => handleOpenCamera('video')} className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4 col-span-1">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <Video className="w-8 h-8 mb-3 text-muted-foreground" />
-                                        <p className="font-semibold">Record a video</p>
-                                    </div>
-                                </button>
-                              </div>
-                              {mediaFile && (
-                                  <div className="mt-2 relative w-full max-w-md mx-auto">
-                                      <p className="text-sm font-medium mb-2 text-muted-foreground">{mediaFile.type === 'image' ? 'Image' : 'Video'} Preview:</p>
-                                      <div className="relative">
-                                          {mediaFile.type === 'image' ? (
-                                             <Image src={mediaFile.dataUrl} alt="Complaint media" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
-                                          ) : (
-                                              <video src={mediaFile.dataUrl} controls className="rounded-lg border w-full h-auto object-cover" />
-                                          )}
-                                          <div className="absolute top-2 right-2 flex gap-2">
-                                              <Button type="button" size="icon" variant="destructive" onClick={handleDeleteMedia}>
-                                                  <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                          </div>
-                                      </div>
-                                  </div>
-                              )}
-                          </FormItem>
+                            <div className="space-y-4">
+                                <FormItem>
+                                    <FormLabel>Attach Image</FormLabel>
+                                    {imageFile ? (
+                                        <div className="mt-2 relative w-full max-w-sm">
+                                            <Image src={imageFile} alt="Complaint image" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={() => setImageFile(null)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
+                                                <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                                                <span className="font-semibold text-sm">Upload</span>
+                                                <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e, 'image')} />
+                                            </label>
+                                            <button type="button" onClick={() => handleOpenCamera('photo')} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
+                                                <Camera className="w-8 h-8 mb-2 text-muted-foreground" />
+                                                <span className="font-semibold text-sm">Take Photo</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </FormItem>
+
+                                <FormItem>
+                                    <FormLabel>Attach Video</FormLabel>
+                                    {videoFile ? (
+                                        <div className="mt-2 relative w-full max-w-sm">
+                                            <video src={videoFile} controls className="rounded-lg border w-full h-auto object-cover" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={() => setVideoFile(null)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label htmlFor="video-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
+                                                <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                                                <span className="font-semibold text-sm">Upload</span>
+                                                <input id="video-upload" type="file" className="hidden" accept="video/*" onChange={(e) => handleFileSelect(e, 'video')} />
+                                            </label>
+                                            <button type="button" onClick={() => handleOpenCamera('video')} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted text-center p-4">
+                                                <Video className="w-8 h-8 mb-2 text-muted-foreground" />
+                                                <span className="font-semibold text-sm">Record Video</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </FormItem>
+                            </div>
                       </CardContent>
                   </Card>
               </div>
@@ -1043,5 +1058,3 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     </div>
   )
 }
-
-    

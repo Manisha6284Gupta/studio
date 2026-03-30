@@ -48,7 +48,9 @@ export interface Complaint {
   title: string;
   description: string;
   location?: ComplaintLocation;
-  image?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  image?: string; // For backward compatibility
   citizenId: string; // ObjectId as string
   initialDepartmentId: string; // ObjectId as string
   priority: ComplaintPriority;
