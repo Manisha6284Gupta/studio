@@ -53,11 +53,11 @@ export default function ControlRoomDashboardPage() {
         return doc(firestore, 'roles_controlRoomStaff', user.uid);
     }, [firestore, user]);
 
-    const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc(controlRoomStaffRef);
+    const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc<{ uid: string }>(controlRoomStaffRef);
 
     const complaintsQuery = useMemoFirebase(() => {
         // Only fetch if the user is authenticated and the role check is complete and they are control room staff.
-        if (!user || isRoleLoading || !controlRoomStaff) return null;
+        if (!user || isRoleLoading || !controlRoomStaff?.uid) return null;
         return query(collection(firestore, 'complaints'));
     }, [firestore, user, controlRoomStaff, isRoleLoading]);
     

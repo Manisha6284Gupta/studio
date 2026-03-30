@@ -48,13 +48,11 @@ export default function DepartmentDashboardPage() {
 
     const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{ departmentId: string }>(staffRef);
     
-    const departmentId = staffProfile?.departmentId;
-
     const complaintsQuery = useMemoFirebase(() => {
-        // Only fetch after user is loaded, we have a department ID, and staff profile is loaded.
-        if (!user || isStaffLoading || !departmentId) return null;
-        return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', departmentId));
-    }, [firestore, user, departmentId, isStaffLoading]);
+        // Only fetch after user is loaded, we have a staff profile with a department ID.
+        if (!user || isStaffLoading || !staffProfile?.departmentId) return null;
+        return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', staffProfile.departmentId));
+    }, [firestore, user, staffProfile, isStaffLoading]);
 
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
     
