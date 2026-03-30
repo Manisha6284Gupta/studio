@@ -45,7 +45,7 @@ export default function CitizenLoginPage() {
     return doc(firestore, 'citizens', user.uid);
   }, [firestore, user]);
 
-  const { data: citizen, isLoading: isCitizenLoading } = useDoc(citizenRef);
+  const { data: citizen, isLoading: isCitizenLoading } = useDoc<{fullName: string}>(citizenRef);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -78,6 +78,7 @@ export default function CitizenLoginPage() {
   const handleLogout = () => {
     signOut(auth).then(() => {
         toast({ title: "Logged out", description: "You have been successfully logged out." });
+        router.push('/');
     });
   }
 

@@ -1,34 +1,19 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, User, Building, Shield } from 'lucide-react';
+import { Upload, User as UserIcon, Building, Shield, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-
-// In a real app, this would come from a user session/context
-const citizenUser = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    avatar: "https://picsum.photos/seed/avatar/100/100"
-};
-
-const departmentUser = {
-    name: "Public Works Department",
-    email: "public.works@example.gov",
-    avatar: ""
-};
-
-const controlRoomUser = {
-    name: "City Control Room",
-    email: "control.room@example.gov",
-    avatar: ""
-};
+import { useUser, useDoc, useFirestore, useMemoFirebase, errorEmitter } from '@/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getRoleFromPathname = (pathname: string) => {
     if (pathname.startsWith('/dashboard/department')) return 'department';
@@ -36,29 +21,73 @@ const getRoleFromPathname = (pathname: string) => {
     return 'citizen';
 }
 
-const getUserForRole = (role: string) => {
-    switch (role) {
-        case 'department': return departmentUser;
-        case 'control-room': return controlRoomUser;
-        default: return citizenUser;
-    }
-}
+const SettingsSkeleton = () => (
+    <div className="space-y-8 max-w-2xl mx-auto">
+        <div className="space-y-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-5 w-72" />
+        </div>
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-7 w-48" />
+                <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center gap-6">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <div className="grid gap-2">
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-4 w-52" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+            </CardContent>
+        </Card>
+    </div>
+);
+
 
 export default function SettingsPage() {
     const pathname = usePathname();
-    const role = getRoleFromPathname(pathname);
-    const initialUser = getUserForRole(role);
-
-    const [user, setUser] = useState(initialUser);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUser.avatar);
+    const router = useRouter();
     const { toast } = useToast();
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+    const role = getRoleFromPathname(pathname);
+
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const profileCollection = role === 'citizen' ? 'citizens' : 'staff';
+
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, profileCollection, user.uid);
+    }, [firestore, user, profileCollection]);
+
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<{fullName: string, email: string, avatar?: string}>(userProfileRef);
 
     useEffect(() => {
-        const currentUser = getUserForRole(getRoleFromPathname(pathname));
-        setUser(currentUser);
-        setAvatarPreview(currentUser.avatar);
-    }, [pathname]);
-
+        if (userProfile) {
+            setName(userProfile.fullName || '');
+            setEmail(userProfile.email || '');
+            setAvatarPreview(userProfile.avatar || null);
+        } else if (user && !isProfileLoading) {
+            // Fallback to auth data if profile doc is missing
+            setName(user.displayName || '');
+            setEmail(user.email || '');
+        }
+    }, [userProfile, user, isProfileLoading]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -72,15 +101,58 @@ export default function SettingsPage() {
     };
 
     const handleSaveChanges = () => {
-        // In a real app, you would call an API to save the user data
-        const updatedUser = { ...user, avatar: avatarPreview || user.avatar };
-        setUser(updatedUser);
-        console.log("Saving user data:", updatedUser);
-        toast({
-            title: "Profile Updated",
-            description: "Your profile information has been successfully saved.",
-        });
+        if (!userProfileRef) return;
+        
+        setIsSaving(true);
+        const updatedData: Record<string, any> = {
+            fullName: name,
+            email: email,
+            updatedAt: serverTimestamp(),
+        };
+
+        if (avatarPreview) {
+            updatedData.avatar = avatarPreview;
+        }
+
+        updateDoc(userProfileRef, updatedData)
+            .then(() => {
+                toast({
+                    title: "Profile Updated",
+                    description: "Your profile information has been successfully saved.",
+                });
+            })
+            .catch(error => {
+                 const permissionError = new FirestorePermissionError({
+                    path: userProfileRef.path,
+                    operation: 'update',
+                    requestResourceData: updatedData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                if (error.code !== 'permission-denied') {
+                     toast({
+                        variant: "destructive",
+                        title: "Update Failed",
+                        description: error.message || "An unexpected error occurred.",
+                    });
+                }
+            })
+            .finally(() => {
+                setIsSaving(false);
+            });
     };
+
+    const isLoading = isUserLoading || (user && isProfileLoading);
+    if (isLoading) return <SettingsSkeleton />;
+
+    if (!user) {
+        // This shouldn't happen if routes are protected, but as a fallback
+        router.push('/');
+        return <SettingsSkeleton />;
+    }
+    
+    let fallbackIcon = <UserIcon className="h-10 w-10"/>;
+    if (role === 'department') fallbackIcon = <Building className="h-10 w-10"/>;
+    if (role === 'control-room') fallbackIcon = <Shield className="h-10 w-10"/>;
 
     return (
         <div className="space-y-8 max-w-2xl mx-auto">
@@ -104,11 +176,9 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-6">
                          <div className="relative">
                             <Avatar className="h-24 w-24 border">
-                                <AvatarImage src={avatarPreview || ''} alt={user.name} />
+                                <AvatarImage src={avatarPreview || ''} alt={name} />
                                 <AvatarFallback>
-                                    {role === 'citizen' && (user.name ? user.name.charAt(0) : <User className="h-10 w-10"/>)}
-                                    {role === 'department' && <Building className="h-10 w-10"/>}
-                                    {role === 'control-room' && <Shield className="h-10 w-10"/>}
+                                    {name ? name.charAt(0).toUpperCase() : fallbackIcon}
                                 </AvatarFallback>
                             </Avatar>
                             <Button asChild size="icon" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 cursor-pointer">
@@ -120,8 +190,8 @@ export default function SettingsPage() {
                             </Button>
                         </div>
                         <div className="grid gap-1.5">
-                            <h2 className="text-xl font-semibold">{user.name}</h2>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <h2 className="text-xl font-semibold">{name}</h2>
+                            <p className="text-sm text-muted-foreground">{email}</p>
                         </div>
                     </div>
                     
@@ -133,8 +203,8 @@ export default function SettingsPage() {
                         </Label>
                         <Input 
                             id="name" 
-                            value={user.name} 
-                            onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))} 
+                            value={name} 
+                            onChange={(e) => setName(e.target.value)} 
                         />
                     </div>
                     <div className="space-y-2">
@@ -142,12 +212,15 @@ export default function SettingsPage() {
                         <Input 
                             id="email" 
                             type="email" 
-                            value={user.email} 
-                            onChange={(e) => setUser(prev => ({ ...prev, email: e.target.value }))} 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
                         />
                     </div>
 
-                     <Button onClick={handleSaveChanges}>Save Changes</Button>
+                     <Button onClick={handleSaveChanges} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                     </Button>
                 </CardContent>
             </Card>
 
