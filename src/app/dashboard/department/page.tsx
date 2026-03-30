@@ -43,16 +43,17 @@ export default function DepartmentDashboardPage() {
     const firestore = useFirestore();
 
     const staffRef = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user?.uid) return null;
         return doc(firestore, 'staff', user.uid);
-    }, [firestore, user]);
-
+    }, [firestore, user?.uid]);
     const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{ departmentId: string }>(staffRef);
     
     const complaintsQuery = useMemoFirebase(() => {
-        if (!user || isStaffLoading || !staffProfile?.departmentId) return null;
-        return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', staffProfile.departmentId));
-    }, [firestore, user, staffProfile, isStaffLoading]);
+        if (staffProfile?.departmentId) {
+            return query(collection(firestore, 'complaints'), where('initialDepartmentId', '==', staffProfile.departmentId));
+        }
+        return null;
+    }, [firestore, staffProfile?.departmentId]);
 
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
     

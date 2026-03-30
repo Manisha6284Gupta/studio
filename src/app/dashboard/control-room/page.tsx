@@ -52,16 +52,18 @@ export default function ControlRoomDashboardPage() {
     const firestore = useFirestore();
 
     const controlRoomStaffRef = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user?.uid) return null;
         return doc(firestore, 'roles_controlRoomStaff', user.uid);
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
 
     const { data: controlRoomStaff, isLoading: isRoleLoading } = useDoc<{ uid: string }>(controlRoomStaffRef);
 
     const complaintsQuery = useMemoFirebase(() => {
-        if (!user || isRoleLoading || !controlRoomStaff) return null;
-        return query(collection(firestore, 'complaints'));
-    }, [firestore, user, controlRoomStaff, isRoleLoading]);
+        if (isRoleLoading === false && controlRoomStaff) {
+            return query(collection(firestore, 'complaints'));
+        }
+        return null;
+    }, [firestore, controlRoomStaff, isRoleLoading]);
     
     const { data: rawComplaints, isLoading: isComplaintsLoading } = useCollection<Omit<Complaint, '_id'>>(complaintsQuery);
 
@@ -77,7 +79,7 @@ export default function ControlRoomDashboardPage() {
     }, [complaints]);
 
     const stats = React.useMemo(() => {
-        if (isComplaintsLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0, escalated: 0 };
+        if (!complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0, escalated: 0 };
         return {
             total: complaints.length,
             resolved: complaints.filter(c => c.status === 'Resolved').length,
@@ -85,7 +87,7 @@ export default function ControlRoomDashboardPage() {
             overdue: complaints.filter(c => c.status === 'Overdue').length,
             escalated: complaints.filter(c => c.isEscalated).length,
         }
-    }, [complaints, isComplaintsLoading]);
+    }, [complaints]);
     
     const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date; showEscalatedOnly?: boolean; }) => {
         let filtered = [...complaints];
