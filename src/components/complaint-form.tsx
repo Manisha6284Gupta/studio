@@ -383,81 +383,115 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             finalVideoUrl = await getDownloadURL(snapshot.ref);
             toast({ title: "Video uploaded!" });
         }
-
-        if (complaint) {
-            // Edit mode
-            const complaintRef = doc(firestore, 'complaints', complaint._id);
-            const updatedComplaintData: Record<string, any> = {
-                title: data.title,
-                description: data.description,
-                ...(data.location && { location: data.location }),
-                initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
-                priority: data.priority || "Medium",
-                severity: data.severity || "Medium",
-                category: data.category,
-                deadline: data.deadline || null,
-                tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-                updatedAt: serverTimestamp(),
-                imageUrl: finalImageUrl,
-                videoUrl: finalVideoUrl,
-            };
-
-            await updateDoc(complaintRef, updatedComplaintData);
-            toast({
-                title: "Complaint Updated!",
-                description: `Complaint #${complaint.applicationNumber} has been updated.`,
-            });
-            router.push(`/dashboard/citizen/complaints/${complaint._id}`);
-        } else {
-            // Create mode
-            const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
-            const newComplaintData = {
-                title: data.title,
-                description: data.description,
-                ...(data.location && { location: data.location }),
-                citizenId: user.uid,
-                initialDepartmentId: data.recommendedDepartment || data.category,
-                priority: data.priority || "Medium",
-                severity: data.severity || "Medium",
-                category: data.category,
-                deadline: data.deadline || null,
-                tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-                status: "Pending",
-                applicationNumber: applicationNumber,
-                isEscalated: false,
-                resolutionStatus: "Unresolved",
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                imageUrl: finalImageUrl,
-                videoUrl: finalVideoUrl,
-                history: [{
-                    action: 'Complaint Submitted',
-                    status: 'Pending',
-                    comment: 'Citizen submitted the complaint.',
-                    date: new Date(),
-                    updatedBy: user.uid
-                }]
-            };
-
-            const complaintsCol = collection(firestore, 'complaints');
-            await addDoc(complaintsCol, newComplaintData);
-            toast({
-                title: "Complaint Submitted!",
-                description: `Application number #${applicationNumber} has been generated.`,
-            });
-            router.push('/dashboard/citizen/complaints');
-        }
-
     } catch (error: any) {
-        console.error("Error submitting form:", error);
+        console.error("Error uploading file:", error);
         toast({
             variant: "destructive",
-            title: "Submission Failed",
-            description: error.message || "An unexpected error occurred during submission. Please check the console.",
+            title: "File Upload Failed",
+            description: error.message || "Could not upload media. Please try again.",
         });
-    } finally {
         setIsSubmitting(false);
+        return;
     }
+
+    if (complaint) {
+        // Edit mode
+        const complaintRef = doc(firestore, 'complaints', complaint._id);
+        const updatedComplaintData = {
+            title: data.title,
+            description: data.description,
+            ...(data.location && { location: data.location }),
+            initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
+            priority: data.priority || "Medium",
+            severity: data.severity || "Medium",
+            category: data.category,
+            deadline: data.deadline || null,
+            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+            updatedAt: serverTimestamp(),
+            imageUrl: finalImageUrl,
+            videoUrl: finalVideoUrl,
+        };
+
+        updateDoc(complaintRef, updatedComplaintData)
+            .catch(error => {
+                const permissionError = new FirestorePermissionError({
+                    path: complaintRef.path,
+                    operation: 'update',
+                    requestResourceData: updatedComplaintData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                 if (error.code !== 'permission-denied') {
+                     toast({
+                        variant: "destructive",
+                        title: "Update Failed",
+                        description: error.message || "An unexpected error occurred.",
+                    });
+                }
+            });
+        
+        toast({
+            title: "Complaint Updated!",
+            description: `Complaint #${complaint.applicationNumber} has been updated.`,
+        });
+        router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+
+    } else {
+        // Create mode
+        const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
+        const newComplaintData = {
+            title: data.title,
+            description: data.description,
+            ...(data.location && { location: data.location }),
+            citizenId: user.uid,
+            initialDepartmentId: data.recommendedDepartment || data.category,
+            priority: data.priority || "Medium",
+            severity: data.severity || "Medium",
+            category: data.category,
+            deadline: data.deadline || null,
+            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+            status: "Pending",
+            applicationNumber: applicationNumber,
+            isEscalated: false,
+            resolutionStatus: "Unresolved",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            imageUrl: finalImageUrl,
+            videoUrl: finalVideoUrl,
+            history: [{
+                action: 'Complaint Submitted',
+                status: 'Pending',
+                comment: 'Citizen submitted the complaint.',
+                date: new Date(),
+                updatedBy: user.uid
+            }]
+        };
+
+        const complaintsCol = collection(firestore, 'complaints');
+        addDoc(complaintsCol, newComplaintData)
+            .catch(error => {
+                const permissionError = new FirestorePermissionError({
+                    path: complaintsCol.path,
+                    operation: 'create',
+                    requestResourceData: newComplaintData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                if (error.code !== 'permission-denied') {
+                     toast({
+                        variant: "destructive",
+                        title: "Submission Failed",
+                        description: error.message || "An unexpected error occurred.",
+                    });
+                }
+            });
+
+        toast({
+            title: "Complaint Submitted!",
+            description: `Application number #${applicationNumber} has been generated.`,
+        });
+        router.push('/dashboard/citizen/complaints');
+    }
+
+    setIsSubmitting(false);
   }
 
     const getAddressFromCoordinates = async (lat: number, lng: number) => {
@@ -1025,7 +1059,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     )}
                     autoPlay
                     playsInline
-                    muted={cameraMode === 'photo'}
                 />
 
                 {isRecording && (
@@ -1062,13 +1095,13 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     {cameraMode === 'photo' ? (
                         <>
                             <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</AlertDialogAction>
+                            <Button onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</Button>
                         </>
                     ) : ( // video mode
                         recordedVideoUrl ? (
                             <>
                                 <Button variant="outline" onClick={handleRetakeVideo}>Retake</Button>
-                                <AlertDialogAction onClick={handleSaveVideo}>Save Video</AlertDialogAction>
+                                <Button onClick={handleSaveVideo}>Save Video</Button>
                             </>
                         ) : isRecording ? (
                              <Button onClick={handleStopRecording} variant="destructive">
