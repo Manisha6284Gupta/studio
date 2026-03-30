@@ -49,7 +49,7 @@ Photo: {{media url=photoDataUri}}
 Based on the provided title, description, and image (if available), perform the following:
 1.  **Categorize** the complaint into one of the following types: Infrastructure, Utility, Health, Environment, Water Department, Road Department, Electricity, Other.
 2.  Suggest a list of **tags** (keywords) that accurately describe the complaint. These should be concise and relevant.
-3.  Recommend the **department(s)** or agencies best suited to handle this complaint. Provide a concise name for each department.
+3.  Recommend the **department(s)** or agencies best suited to handle this complaint. Your recommendation for the \`recommendedDepartmentNames\` field MUST be an array containing one or more strings from the following exact list: ["Public Works", "Utilities", "Health", "Environment", "Water Department", "Road Department", "Electricity"]. Do NOT append " Department" to names unless it is already present in the list.
 4.  Determine the **priority** (Low, Medium, High) of the complaint.
 5.  Assess the **severity** (Critical, High, Medium, Low) of the problem.
 6.  Propose a **deadline** for resolution in ISO 8601 format (e.g., "YYYY-MM-DDTHH:mm:ssZ"). The deadline should be calculated based on the priority, severity, and the current date. For example, Critical/High severity complaints might have deadlines within 24-72 hours, Medium within 3-7 days, and Low within 1-2 weeks. Ensure the deadline is a future date.
