@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +15,6 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const getRoleFromPathname = (pathname: string) => {
-    if (pathname.startsWith('/dashboard/department')) return 'department';
-    if (pathname.startsWith('/dashboard/control-room')) return 'control-room';
-    return 'citizen';
-}
 
 const SettingsSkeleton = () => (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -56,22 +51,48 @@ const SettingsSkeleton = () => (
 
 
 export default function SettingsPage() {
-    const pathname = usePathname();
     const router = useRouter();
     const { toast } = useToast();
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
-    const role = getRoleFromPathname(pathname);
+    
+    const [role, setRole] = useState<'citizen' | 'department' | 'control-room' | null>(null);
+    const [profileCollection, setProfileCollection] = useState<'citizens' | 'staff' | null>(null);
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const profileCollection = role === 'citizen' ? 'citizens' : 'staff';
+    const staffProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'staff', user.uid);
+    }, [firestore, user]);
+
+    const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{role: 'Department Staff' | 'Control Room Staff'}>(staffProfileRef);
+
+    useEffect(() => {
+        if (isUserLoading || isStaffLoading) return;
+
+        if (staffProfile) {
+            setProfileCollection('staff');
+            if (staffProfile.role === 'Control Room Staff') {
+                setRole('control-room');
+            } else {
+                setRole('department');
+            }
+        } else if (user) {
+            setProfileCollection('citizens');
+            setRole('citizen');
+        } else {
+            setProfileCollection(null);
+            setRole(null);
+        }
+    }, [user, staffProfile, isUserLoading, isStaffLoading]);
+
 
     const userProfileRef = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user || !profileCollection) return null;
         return doc(firestore, profileCollection, user.uid);
     }, [firestore, user, profileCollection]);
 
@@ -82,12 +103,11 @@ export default function SettingsPage() {
             setName(userProfile.fullName || '');
             setEmail(userProfile.email || '');
             setAvatarPreview(userProfile.avatar || null);
-        } else if (user && !isProfileLoading) {
-            // Fallback to auth data if profile doc is missing
+        } else if (user && !isProfileLoading && profileCollection) {
             setName(user.displayName || '');
             setEmail(user.email || '');
         }
-    }, [userProfile, user, isProfileLoading]);
+    }, [userProfile, user, isProfileLoading, profileCollection]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -141,11 +161,10 @@ export default function SettingsPage() {
             });
     };
 
-    const isLoading = isUserLoading || (user && isProfileLoading);
+    const isLoading = isUserLoading || isStaffLoading || !role;
     if (isLoading) return <SettingsSkeleton />;
 
     if (!user) {
-        // This shouldn't happen if routes are protected, but as a fallback
         router.push('/');
         return <SettingsSkeleton />;
     }
@@ -224,7 +243,7 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
 
-            {['department', 'control-room'].includes(role) && (
+            {['department', 'control-room'].includes(role || '') && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Notification Settings</CardTitle>
