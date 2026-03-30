@@ -77,63 +77,74 @@ export default function StaffRegisterPage() {
     },
   });
 
-  const onSubmit = (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
-    createUserWithEmailAndPassword(auth, data.email, data.password)
-      .then(async (userCredential) => {
-        const user = userCredential.user;
-        
-        const staffDocRef = doc(firestore, 'staff', user.uid);
-        const staffData = {
-          fullName: data.fullName,
-          departmentId: data.departmentId,
-          role: data.role,
-          phoneNumber: data.phoneNumber,
-          email: data.email,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          id: user.uid,
-        };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
 
-        // If user is a control room staff, add them to the roles collection
-        if (data.role === 'Control Room Staff') {
-            const controlRoomRoleRef = doc(firestore, 'roles_controlRoomStaff', user.uid);
-            await setDoc(controlRoomRoleRef, { uid: user.uid });
-        }
+      const staffData = {
+        fullName: data.fullName,
+        departmentId: data.departmentId,
+        role: data.role,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        id: user.uid,
+      };
+      
+      const staffDocRef = doc(firestore, 'staff', user.uid);
+      await setDoc(staffDocRef, staffData);
 
-        setDoc(staffDocRef, staffData)
-          .then(() => {
-            toast({
-              title: "Registration Successful!",
-              description: "Welcome to CivicConnect. Please log in.",
-            });
-            router.push('/login/organization');
-          })
-          .catch((error) => {
-            console.error("Firestore error:", error);
+      if (data.role === 'Control Room Staff') {
+        const controlRoomRoleRef = doc(firestore, 'roles_controlRoomStaff', user.uid);
+        await setDoc(controlRoomRoleRef, { uid: user.uid });
+      }
+
+      toast({
+        title: "Registration Successful!",
+        description: "Welcome to CivicConnect. Please log in.",
+      });
+      router.push('/login/organization');
+
+    } catch (error: any) {
+      let errorMessage = "An unknown error occurred during registration.";
+
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "This email address is already in use.";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "The password is too weak.";
+            break;
+          case 'permission-denied':
+            errorMessage = "Permission denied. You may not have the rights to create this staff account.";
             const permissionError = new FirestorePermissionError({
-              path: staffDocRef.path,
-              operation: 'create',
-              requestResourceData: staffData,
+                path: 'staff or roles_controlRoomStaff',
+                operation: 'create',
+                requestResourceData: data,
             });
             errorEmitter.emit('permission-error', permissionError);
-            setIsLoading(false);
-          });
-      })
-      .catch((error) => {
-        let errorMessage = "An unknown error occurred during registration.";
-        if (error.code === 'auth/email-already-in-use') {
-          errorMessage = "This email address is already in use.";
-        } else if (error.code === 'auth/weak-password') {
-          errorMessage = "The password is too weak.";
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+            break;
         }
-        toast({
-          variant: "destructive",
-          title: "Registration Failed",
-          description: errorMessage,
-        });
-        setIsLoading(false);
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: errorMessage,
       });
+      
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -305,5 +316,3 @@ export default function StaffRegisterPage() {
     </div>
   );
 }
-
-    

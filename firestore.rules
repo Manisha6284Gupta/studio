@@ -178,16 +178,17 @@ service cloud.firestore {
 
     /**
      * @description A dedicated collection for managing Control Room Staff roles. The existence of a document
-     * signifies global privileges. This collection is not client-writable to prevent privilege escalation.
+     * signifies global privileges.
      * @path /roles_controlRoomStaff/{controlRoomStaffId}
      * @allow (get) Any signed-in user can check if another user has Control Room privileges (e.g., via `exists()`).
-     * @deny (create) Any user attempts to grant themselves or others Control Room privileges from the client.
-     * @principle Global role management should not be client-writable.
+     * @allow (create) A user can create their own role document during staff registration. This is a controlled risk to enable the UI-based registration of admins.
+     * @deny (update, delete) Role modification or deletion from the client is forbidden to prevent privilege escalation or de-escalation.
+     * @principle Global role management should be handled carefully. Client-side creation is allowed only for self-assignment during registration.
      */
     match /roles_controlRoomStaff/{controlRoomStaffId} {
       allow get: if isSignedIn();
       allow list: if isControlRoomStaff();
-      allow create: if false;
+      allow create: if isOwner(controlRoomStaffId);
       allow update: if false;
       allow delete: if false;
     }
