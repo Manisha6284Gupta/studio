@@ -39,9 +39,10 @@ import { runCategorizeComplaint, runTranslateText } from "@/lib/actions"
 import type { ComplaintCategorizationAndRoutingOutput } from "@/lib/ai-types"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
-import { useUser, useFirestore, errorEmitter } from "@/firebase";
+import { useUser, useFirestore, errorEmitter, useStorage } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors"
 import { addDoc, collection, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { Complaint } from "@/lib/types"
 
 const complaintFormSchema = z.object({
@@ -65,6 +66,23 @@ interface ComplaintFormProps {
     complaint?: Complaint;
 }
 
+function dataURLtoFile(dataurl: string, filename: string): File {
+    const arr = dataurl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) {
+        throw new Error('Invalid data URL');
+    }
+    const mime = mimeMatch[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+}
+
+
 const getInitialDeadline = (deadline: any): Date | undefined => {
     if (!deadline) return undefined;
     // Firestore Timestamps have a toDate() method
@@ -86,9 +104,12 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
   const router = useRouter()
   const { user } = useUser()
   const firestore = useFirestore()
+  const storage = useStorage();
   
-  const [imageFile, setImageFile] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
   // Camera and video state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -127,8 +148,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
   
   useEffect(() => {
     if (complaint) {
-        setImageFile(complaint.imageUrl || null);
-        setVideoFile(complaint.videoUrl || null);
+        setImagePreview(complaint.imageUrl || null);
+        setVideoPreview(complaint.videoUrl || null);
     }
   }, [complaint]);
 
@@ -287,25 +308,17 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     try {
       const complaintInput: any = { title, description };
       if (imageFile) {
-        complaintInput.photoDataUri = imageFile;
+        // AI analysis requires a data URI for now.
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onloadend = async () => {
+            complaintInput.photoDataUri = reader.result as string;
+            await runAndSetAiResults(complaintInput);
+        }
+      } else {
+          await runAndSetAiResults(complaintInput);
       }
       
-      const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
-      
-      form.setValue("category", result.category, { shouldValidate: true });
-      form.setValue("tags", result.tags.join(", "), { shouldValidate: true });
-      form.setValue("priority", result.priority, { shouldValidate: true });
-      form.setValue("severity", result.severity, { shouldValidate: true });
-      form.setValue("deadline", new Date(result.deadline), { shouldValidate: true });
-      if (result.recommendedDepartmentNames.length > 0) {
-        form.setValue("recommendedDepartment", result.recommendedDepartmentNames[0]);
-      }
-      
-      toast({
-        title: "AI Analysis Complete",
-        description: "We've pre-filled the form with our suggestions.",
-      })
-
     } catch (error) {
       console.error("AI analysis failed:", error)
       toast({
@@ -313,8 +326,29 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
         title: "AI Analysis Failed",
         description: "We couldn't analyze your complaint. Please fill the form manually.",
       })
+      setIsAiLoading(false);
+    }
+  }
+
+  const runAndSetAiResults = async (complaintInput: any) => {
+    try {
+        const result: ComplaintCategorizationAndRoutingOutput = await runCategorizeComplaint(complaintInput);
+        
+        form.setValue("category", result.category, { shouldValidate: true });
+        form.setValue("tags", result.tags.join(", "), { shouldValidate: true });
+        form.setValue("priority", result.priority, { shouldValidate: true });
+        form.setValue("severity", result.severity, { shouldValidate: true });
+        form.setValue("deadline", new Date(result.deadline), { shouldValidate: true });
+        if (result.recommendedDepartmentNames.length > 0) {
+            form.setValue("recommendedDepartment", result.recommendedDepartmentNames[0]);
+        }
+        
+        toast({
+            title: "AI Analysis Complete",
+            description: "We've pre-filled the form with our suggestions.",
+        })
     } finally {
-      setIsAiLoading(false)
+        setIsAiLoading(false);
     }
   }
 
@@ -329,111 +363,100 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     }
     
     setIsSubmitting(true);
+
+    let finalImageUrl = complaint?.imageUrl || null;
+    let finalVideoUrl = complaint?.videoUrl || null;
     
-    if (complaint) {
-        // Edit mode
-        const complaintRef = doc(firestore, 'complaints', complaint._id);
-        const updatedComplaintData: Record<string, any> = {
-            title: data.title,
-            description: data.description,
-            ...(data.location && { location: data.location }),
-            initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
-            priority: data.priority || "Medium",
-            severity: data.severity || "Medium",
-            category: data.category,
-            deadline: data.deadline || null,
-            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-            updatedAt: serverTimestamp(),
-            imageUrl: imageFile,
-            videoUrl: videoFile,
-        };
+    try {
+        if (imageFile) {
+            toast({ title: "Uploading image..." });
+            const storageRef = ref(storage, `complaint-media/${user.uid}/${Date.now()}-${imageFile.name}`);
+            const snapshot = await uploadBytes(storageRef, imageFile);
+            finalImageUrl = await getDownloadURL(snapshot.ref);
+            toast({ title: "Image uploaded!" });
+        }
 
-        updateDoc(complaintRef, updatedComplaintData)
-            .then(() => {
-                toast({
-                    title: "Complaint Updated!",
-                    description: `Complaint #${complaint.applicationNumber} has been updated.`,
-                });
-                router.push(`/dashboard/citizen/complaints/${complaint._id}`);
-            })
-            .catch((error) => {
-                console.error("Error updating complaint:", error);
-                const permissionError = new FirestorePermissionError({
-                    path: complaintRef.path,
-                    operation: 'update',
-                    requestResourceData: updatedComplaintData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                if (error.code !== 'permission-denied') {
-                    toast({
-                        variant: "destructive",
-                        title: "Update Failed",
-                        description: error.message || "An unexpected error occurred. Please try again.",
-                    });
-                }
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
-    } else {
-        // Create mode
-        const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
-        const newComplaintData = {
-            title: data.title,
-            description: data.description,
-            ...(data.location && { location: data.location }),
-            citizenId: user.uid,
-            initialDepartmentId: data.recommendedDepartment || data.category,
-            priority: data.priority || "Medium",
-            severity: data.severity || "Medium",
-            category: data.category,
-            deadline: data.deadline || null,
-            tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-            status: "Pending",
-            applicationNumber: applicationNumber,
-            isEscalated: false,
-            resolutionStatus: "Unresolved",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            imageUrl: imageFile,
-            videoUrl: videoFile,
-            history: [{
-                action: 'Complaint Submitted',
-                status: 'Pending',
-                comment: 'Citizen submitted the complaint.',
-                date: new Date(),
-                updatedBy: user.uid
-            }]
-        };
+        if (videoFile) {
+            toast({ title: "Uploading video..." });
+            const storageRef = ref(storage, `complaint-media/${user.uid}/${Date.now()}-${videoFile.name}`);
+            const snapshot = await uploadBytes(storageRef, videoFile);
+            finalVideoUrl = await getDownloadURL(snapshot.ref);
+            toast({ title: "Video uploaded!" });
+        }
 
-        const complaintsCol = collection(firestore, 'complaints');
-        addDoc(complaintsCol, newComplaintData)
-            .then((docRef) => {
-                toast({
-                    title: "Complaint Submitted!",
-                    description: `Application number #${applicationNumber} has been generated.`,
-                });
-                router.push('/dashboard/citizen/complaints');
-            })
-            .catch((error) => {
-                console.error("Error submitting complaint:", error);
-                const permissionError = new FirestorePermissionError({
-                    path: complaintsCol.path,
-                    operation: 'create',
-                    requestResourceData: newComplaintData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                if (error.code !== 'permission-denied') {
-                    toast({
-                        variant: "destructive",
-                        title: "Submission Failed",
-                        description: error.message || "An unexpected error occurred. Please try again.",
-                    });
-                }
-            })
-            .finally(() => {
-                setIsSubmitting(false);
+        if (complaint) {
+            // Edit mode
+            const complaintRef = doc(firestore, 'complaints', complaint._id);
+            const updatedComplaintData: Record<string, any> = {
+                title: data.title,
+                description: data.description,
+                ...(data.location && { location: data.location }),
+                initialDepartmentId: data.recommendedDepartment || complaint.initialDepartmentId,
+                priority: data.priority || "Medium",
+                severity: data.severity || "Medium",
+                category: data.category,
+                deadline: data.deadline || null,
+                tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+                updatedAt: serverTimestamp(),
+                imageUrl: finalImageUrl,
+                videoUrl: finalVideoUrl,
+            };
+
+            await updateDoc(complaintRef, updatedComplaintData);
+            toast({
+                title: "Complaint Updated!",
+                description: `Complaint #${complaint.applicationNumber} has been updated.`,
             });
+            router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+        } else {
+            // Create mode
+            const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
+            const newComplaintData = {
+                title: data.title,
+                description: data.description,
+                ...(data.location && { location: data.location }),
+                citizenId: user.uid,
+                initialDepartmentId: data.recommendedDepartment || data.category,
+                priority: data.priority || "Medium",
+                severity: data.severity || "Medium",
+                category: data.category,
+                deadline: data.deadline || null,
+                tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+                status: "Pending",
+                applicationNumber: applicationNumber,
+                isEscalated: false,
+                resolutionStatus: "Unresolved",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                imageUrl: finalImageUrl,
+                videoUrl: finalVideoUrl,
+                history: [{
+                    action: 'Complaint Submitted',
+                    status: 'Pending',
+                    comment: 'Citizen submitted the complaint.',
+                    date: new Date(),
+                    updatedBy: user.uid
+                }]
+            };
+
+            const complaintsCol = collection(firestore, 'complaints');
+            await addDoc(complaintsCol, newComplaintData);
+            toast({
+                title: "Complaint Submitted!",
+                description: `Application number #${applicationNumber} has been generated.`,
+            });
+            router.push('/dashboard/citizen/complaints');
+        }
+
+    } catch (error: any) {
+        console.error("Error submitting form:", error);
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: error.message || "An unexpected error occurred during submission. Please check the console.",
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -544,8 +567,12 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             if (context) {
                 context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
                 const imageDataUrl = canvas.toDataURL('image/png');
+                const file = dataURLtoFile(imageDataUrl, `capture-${Date.now()}.png`);
                 
-                setImageFile(imageDataUrl);
+                setImageFile(file);
+                if (imagePreview) URL.revokeObjectURL(imagePreview); // Clean up old preview
+                setImagePreview(URL.createObjectURL(file));
+
                 toast({
                     title: "Photo Captured!",
                     description: "Your photo has been attached to the complaint.",
@@ -607,13 +634,11 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             fetch(recordedVideoUrl)
                 .then(res => res.blob())
                 .then(blob => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => {
-                        const base64data = reader.result as string;
-                        setVideoFile(base64data);
-                        toast({ title: "Video saved successfully!" });
-                    };
+                    const file = new File([blob], `recording-${Date.now()}.webm`, { type: blob.type });
+                    setVideoFile(file);
+                    if (videoPreview) URL.revokeObjectURL(videoPreview); // Clean up old preview
+                    setVideoPreview(URL.createObjectURL(file));
+                    toast({ title: "Video saved successfully!" });
                 });
             handleCloseCamera();
         }
@@ -630,23 +655,41 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const dataUrl = reader.result as string;
-                if(file.type.startsWith('image/') && type === 'image') {
-                    setImageFile(dataUrl);
-                    toast({ title: 'Image uploaded successfully!' });
-                } else if (file.type.startsWith('video/') && type === 'video') {
-                    setVideoFile(dataUrl);
-                    toast({ title: 'Video uploaded successfully!' });
-                } else {
-                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a valid file for the selected type.' });
+
+            if(type === 'image') {
+                if (!file.type.startsWith('image/')) {
+                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a valid image file.' });
+                    return;
                 }
-            };
-            reader.readAsDataURL(file);
-             e.target.value = '';
+                setImageFile(file);
+                if (imagePreview) URL.revokeObjectURL(imagePreview);
+                setImagePreview(URL.createObjectURL(file));
+                toast({ title: 'Image uploaded successfully!' });
+            } else if (type === 'video') {
+                if (!file.type.startsWith('video/')) {
+                    toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a valid video file.' });
+                    return;
+                }
+                setVideoFile(file);
+                if (videoPreview) URL.revokeObjectURL(videoPreview);
+                setVideoPreview(URL.createObjectURL(file));
+                toast({ title: 'Video uploaded successfully!' });
+            }
+            e.target.value = ''; // Reset input
         }
     };
+    
+    const clearImage = () => {
+        if (imagePreview && imageFile) URL.revokeObjectURL(imagePreview);
+        setImageFile(null);
+        setImagePreview(null);
+    }
+    
+    const clearVideo = () => {
+        if (videoPreview && videoFile) URL.revokeObjectURL(videoPreview);
+        setVideoFile(null);
+        setVideoPreview(null);
+    }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -748,10 +791,10 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                             <div className="space-y-4">
                                 <FormItem>
                                     <FormLabel>Attach Image</FormLabel>
-                                    {imageFile ? (
+                                    {imagePreview ? (
                                         <div className="mt-2 relative w-full max-w-sm">
-                                            <Image src={imageFile} alt="Complaint image" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
-                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={() => setImageFile(null)}>
+                                            <Image src={imagePreview} alt="Complaint image" width={400} height={300} className="rounded-lg border w-full h-auto object-cover" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={clearImage}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -772,10 +815,10 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
 
                                 <FormItem>
                                     <FormLabel>Attach Video</FormLabel>
-                                    {videoFile ? (
+                                    {videoPreview ? (
                                         <div className="mt-2 relative w-full max-w-sm">
-                                            <video src={videoFile} controls className="rounded-lg border w-full h-auto object-cover" />
-                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={() => setVideoFile(null)}>
+                                            <video src={videoPreview} controls className="rounded-lg border w-full h-auto object-cover" />
+                                            <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2" onClick={clearVideo}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -982,6 +1025,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     )}
                     autoPlay
                     playsInline
+                    muted={cameraMode === 'photo'}
                 />
 
                 {isRecording && (
