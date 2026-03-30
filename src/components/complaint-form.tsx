@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -533,6 +532,10 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
                 const imageDataUrl = canvas.toDataURL('image/png');
                 setCapturedImage(imageDataUrl);
+                toast({
+                    title: "Photo Captured!",
+                    description: "You can now save the photo or retake it.",
+                });
             }
         } else {
             toast({
