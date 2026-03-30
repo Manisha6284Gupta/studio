@@ -36,7 +36,6 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { runCategorizeComplaint, runTranslateText } from "@/lib/actions"
-import type { ComplaintCategorizationAndRoutingOutput } from "@/lib/ai-types"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 import { useUser, useFirestore, errorEmitter, useStorage } from "@/firebase";
@@ -61,6 +60,16 @@ const complaintFormSchema = z.object({
 })
 
 type ComplaintFormValues = z.infer<typeof complaintFormSchema>
+
+// Type definition moved here to prevent client/server bundling issues.
+type ComplaintCategorizationAndRoutingOutput = {
+  category: "Infrastructure" | "Utility" | "Health" | "Environment" | "Water Department" | "Road Department" | "Electricity" | "Other";
+  tags: string[];
+  recommendedDepartmentNames: string[];
+  priority: "Low" | "Medium" | "High";
+  severity: "Critical" | "High" | "Medium" | "Low";
+  deadline: string;
+};
 
 interface ComplaintFormProps {
     complaint?: Complaint;
@@ -197,7 +206,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-}, [isCameraOpen, cameraMode]);
+}, [isCameraOpen, cameraMode, toast]);
 
 
   const handleMicClick = () => {
@@ -365,42 +374,40 @@ async function onSubmit(data: ComplaintFormValues) {
     setIsSubmitting(true);
 
     const handleFileUploads = async (docRef: DocumentReference) => {
-        const upload = async (file: File) => {
+        const upload = async (file: File, type: 'image' | 'video') => {
             const storageRef = ref(storage, `complaint-media/${docRef.id}/${Date.now()}-${file.name}`);
             const snapshot = await uploadBytes(storageRef, file);
-            return getDownloadURL(snapshot.ref);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            const updateData = type === 'image' ? { imageUrl: downloadURL } : { videoUrl: downloadURL };
+            await updateDoc(docRef, updateData);
         };
 
         try {
-            const updates: { imageUrl?: string | null, videoUrl?: string | null } = {};
-            let needsUpdate = false;
-
+            const uploadPromises: Promise<void>[] = [];
             if (imageFile) {
-                updates.imageUrl = await upload(imageFile);
-                needsUpdate = true;
-            } else if (complaint && imagePreview === null) { 
-                updates.imageUrl = null;
-                needsUpdate = true;
+                uploadPromises.push(upload(imageFile, 'image'));
+            } else if (complaint && imagePreview === null) {
+                uploadPromises.push(updateDoc(docRef, { imageUrl: null }));
             }
 
             if (videoFile) {
-                updates.videoUrl = await upload(videoFile);
-                needsUpdate = true;
+                uploadPromises.push(upload(videoFile, 'video'));
             } else if (complaint && videoPreview === null) {
-                updates.videoUrl = null;
-                needsUpdate = true;
+                 uploadPromises.push(updateDoc(docRef, { videoUrl: null }));
             }
+            // We don't await the promises here for a "fire-and-forget" approach.
+            // But we can log errors if they occur.
+            Promise.all(uploadPromises).catch(uploadError => {
+                 console.error("Background upload/update failed:", uploadError);
+                 toast({
+                    variant: "destructive",
+                    title: "Media Upload Failed",
+                    description: "Your complaint was saved, but a media upload failed. You can try editing the complaint to upload it again.",
+                });
+            })
 
-            if (needsUpdate) {
-                await updateDoc(docRef, updates);
-            }
-        } catch (uploadError) {
-            console.error("Background upload/update failed:", uploadError);
-            toast({
-                variant: "destructive",
-                title: "Media Upload Failed",
-                description: "Your complaint was saved, but the media upload failed. You can try editing the complaint to upload it again.",
-            });
+        } catch (error) {
+             console.error("Error preparing uploads:", error);
         }
     };
 
@@ -420,25 +427,26 @@ async function onSubmit(data: ComplaintFormValues) {
             updatedAt: serverTimestamp(),
         };
 
-        try {
-            await updateDoc(complaintRef, updatedTextData);
-
-            toast({
-                title: "Complaint Updated!",
-                description: `The details for complaint #${complaint.applicationNumber} have been saved.`,
-            });
-            router.push(`/dashboard/citizen/complaints/${complaint._id}`);
-
-            handleFileUploads(complaintRef); // Fire and forget
-
-        } catch (error: any) {
+        // Fire-and-forget the update
+        updateDoc(complaintRef, updatedTextData).catch(error => {
             const permissionError = new FirestorePermissionError({ path: complaintRef.path, operation: 'update', requestResourceData: updatedTextData });
             errorEmitter.emit('permission-error', permissionError);
             if (error.code !== 'permission-denied') {
                 toast({ variant: "destructive", title: "Update Failed", description: error.message || "An unexpected error occurred." });
             }
-            setIsSubmitting(false);
-        }
+        });
+        
+        // Handle uploads in the background
+        handleFileUploads(complaintRef);
+
+        toast({
+            title: "Complaint Updated!",
+            description: `The details for complaint #${complaint.applicationNumber} are being saved.`,
+        });
+        router.push(`/dashboard/citizen/complaints/${complaint._id}`);
+        router.refresh();
+
+
     } else {
         // --- CREATE MODE ---
         const applicationNumber = `CN-${Date.now().toString().slice(-6)}`;
@@ -457,10 +465,10 @@ async function onSubmit(data: ComplaintFormValues) {
             applicationNumber: applicationNumber,
             isEscalated: false,
             resolutionStatus: "Unresolved",
-createdAt: serverTimestamp(),
+            createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            imageUrl: null,
-            videoUrl: null,
+            imageUrl: null, // Will be updated by background job
+            videoUrl: null, // Will be updated by background job
             history: [{
                 action: 'Complaint Submitted',
                 status: 'Pending',
@@ -472,22 +480,32 @@ createdAt: serverTimestamp(),
 
         try {
             const complaintsCol = collection(firestore, 'complaints');
-            const docRef = await addDoc(complaintsCol, newComplaintData);
+            
+            // Get the doc ref first without waiting for the write
+            const docRef = doc(complaintsCol); 
+            
+            // Fire-and-forget the write
+            setDoc(docRef, newComplaintData).catch(error => {
+                const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: newComplaintData });
+                errorEmitter.emit('permission-error', permissionError);
+                 if (error.code !== 'permission-denied') {
+                    toast({ variant: "destructive", title: "Submission Failed", description: error.message || "An unexpected error occurred." });
+                }
+            });
+
+            // Handle uploads in the background
+            handleFileUploads(docRef);
 
             toast({
                 title: "Complaint Submitted!",
                 description: `Application number #${applicationNumber} has been generated.`,
             });
             router.push('/dashboard/citizen/complaints');
-
-            handleFileUploads(docRef); // Fire and forget
+            router.refresh();
 
         } catch (error: any) {
-            const permissionError = new FirestorePermissionError({ path: 'complaints', operation: 'create', requestResourceData: newComplaintData });
-            errorEmitter.emit('permission-error', permissionError);
-            if (error.code !== 'permission-denied') {
-                toast({ variant: "destructive", title: "Submission Failed", description: error.message || "An unexpected error occurred." });
-            }
+            // This catch block might not be hit for async errors, but good to have
+            toast({ variant: "destructive", title: "Submission Failed", description: error.message || "An unexpected error occurred." });
             setIsSubmitting(false);
         }
     }
