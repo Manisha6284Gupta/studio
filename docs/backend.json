@@ -17,10 +17,7 @@
         "gender": {
           "type": "string",
           "description": "The gender of the citizen.",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Male", "Female", "Other"]
         },
         "phoneNumber": {
           "type": "string",
@@ -130,10 +127,7 @@
         "role": {
           "type": "string",
           "description": "The role of the staff member within the system (e.g., Department Staff, Control Room Staff).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Department Staff", "Control Room Staff"]
         },
         "createdAt": {
           "type": "string",
@@ -204,18 +198,12 @@
         "priority": {
           "type": "string",
           "description": "The priority level of the complaint (e.g., Low, Medium, High).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Low", "Medium", "High"]
         },
         "severity": {
           "type": "string",
           "description": "The severity level of the complaint (e.g., Critical, High, Medium, Low).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Critical", "High", "Medium", "Low"]
         },
         "assignedToStaffId": {
           "type": "string",
@@ -231,10 +219,7 @@
         "category": {
           "type": "string",
           "description": "The categorized type of problem (e.g., Infrastructure, Utility, Health, Environment, Other).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Infrastructure", "Utility", "Health", "Environment", "Water Department", "Road Department", "Electricity", "Other"]
         },
         "deadline": {
           "type": "string",
@@ -244,10 +229,7 @@
         "status": {
           "type": "string",
           "description": "The current status of the complaint (e.g., Pending, In Progress, Resolved, Overdue).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Pending", "In Progress", "Resolved", "Overdue"]
         },
         "createdAt": {
           "type": "string",
@@ -266,10 +248,7 @@
         "resolutionStatus": {
           "type": "string",
           "description": "The status indicating if the complaint has been formally resolved or remains unresolved.",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Resolved", "Unresolved"]
         },
         "resolvedByStaffId": {
           "type": "string",
@@ -327,10 +306,7 @@
         "resolutionActionType": {
           "type": "string",
           "description": "The type of action taken for resolution (e.g., Repair, Replacement, Investigation).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Repair", "Replacement", "Investigation", "Clearance", "Monitoring", "Other"]
         },
         "relatedDepartmentIds": {
           "type": "array",
@@ -433,10 +409,7 @@
         "statusSnapshot": {
           "type": "string",
           "description": "The status of the complaint at the time this history entry was recorded (e.g., Pending, In Progress, Resolved, Overdue).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["Pending", "In Progress", "Resolved", "Overdue"]
         },
         "comment": {
           "type": "string",
@@ -585,3 +558,5 @@
     "reasoning": "The Firestore structure for CivicConnect is designed adhering strictly to the core design principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs, prioritizing security, scalability, and debuggability. \n\n**Authorization Independence via Denormalization:**\n\n1.  **Complaint Entity (`/complaints/{complaintId}`):** The central `Complaint` document is denormalized to include all critical authorization context directly within itself. Fields like `citizenId`, `initialDepartmentId`, and `assignedToStaffId` are stored on each complaint document. This is crucial for Authorization Independence as it eliminates the need for `get()` calls to parent documents or related collections (e.g., a citizen's profile or a department's details) when authorizing access to a specific complaint document. For instance, to check if a citizen can access a complaint, we simply compare `request.auth.uid` with `resource.data.citizenId`, rather than fetching the citizen's profile. This also supports atomic operations for creating/updating complaints without rule complexities.\n2.  **Subcollections (`attachments`, `history`):** The `Attachment` and `ComplaintHistoryEntry` entities are structured as subcollections of `Complaint` (`/complaints/{complaintId}/attachments/{attachmentId}` and `/complaints/{complaintId}/history/{historyEntryId}`). This leverages Firestore's hierarchical security model, allowing their access rules to implicitly inherit or directly reference the denormalized authorization fields from their parent `Complaint` document. This means, if a user is authorized to view a complaint, they are typically authorized to view its attachments and history without additional complex lookups.\n\n**QAPs (Queries Are Not Filters):**\n\n1.  **Citizen Access:** Citizens can list their complaints by querying the top-level `/complaints` collection with a `where('citizenId', '==', request.auth.uid)` clause. The security rules will directly enforce `allow list: if request.query.where.citizenId == request.auth.uid;`. This is fully QAP-compliant because the query filter exactly matches the authorization condition, and no `get()` calls are required to satisfy the `list` operation.\n2.  **Control Room Staff Access:** Control Room Staff require access to all complaints across all departments. Their authorization is established by checking for existence in a dedicated `/roles_controlRoomStaff/{uid}` collection. For them, `list` operations on `/complaints` are QAP-compliant because they can be filter-less (e.g., `allow list: if exists(/roles_controlRoomStaff/$(request.auth.uid));`). This grants them broad access as intended.\n3.  **Department Staff Access (Compromise for List):** Department Staff need to list complaints assigned to their specific department. They will query `/complaints` using `where('initialDepartmentId', '==', <staffDepartmentId>)`. Due to the DBAC principle (no custom claims) and the critical mandate against `get()` for `list` operations (to maintain Authorization Independence fully for complex `list` scenarios), verifying `<staffDepartmentId>` without fetching the staff member's profile is challenging. Therefore, for department staff `list` operations, the rule will require a `get()` call to `/staff/{request.auth.uid}` to retrieve their `departmentId` and match it against `request.query.where.initialDepartmentId`. While a `get()` in a `list` rule is generally discouraged, it is the most secure DBAC-compliant approach here, given the constraints, and the denormalization of `initialDepartmentId` on the `Complaint` document itself supports the query predicate. For individual `read/update/delete` operations on a specific complaint, the rule can still use `resource.data.initialDepartmentId == get(/staff/$(request.auth.uid)).data.departmentId`, which is acceptable for atomic operations.\n\n**Structural Segregation & Access Modeling:**\n*   **Private Data:** `/citizens/{citizenId}` and `/staff/{staffId}` collections are strictly path-based, ensuring that only the authenticated user can access their own profile.\n*   **Global Roles:** `/roles_controlRoomStaff/{uid}` uses existence for global role management, keeping role checks simple and explicit.\n*   **Core Entities:** `Department` data is stored in a top-level `/departments/{departmentId}` collection, accessible based on staff roles. `Complaint` data is in `/complaints/{complaintId}` serving as the single source of truth, optimized for diverse access patterns as described above."
   }
 }
+
+    
