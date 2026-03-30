@@ -522,6 +522,7 @@ async function onSubmit(data: ComplaintFormValues) {
                 title: "Configuration Error",
                 description: "Google Maps API key is not configured. Please add it to your .env file.",
             });
+            setIsFetchingLocation(false);
             return;
         }
         try {
@@ -535,11 +536,20 @@ async function onSubmit(data: ComplaintFormValues) {
                     description: `Location captured: ${address}`,
                 });
             } else {
-                setLocationName("Address not found for the captured coordinates.");
+                let errorDescription = "Could not find a valid address for your location.";
+                if (data.status === 'REQUEST_DENIED') {
+                    errorDescription = "The request to Google Maps was denied. Please ensure your API key is correct and has the Geocoding API enabled in the Google Cloud Console.";
+                } else if (data.status === 'ZERO_RESULTS') {
+                    errorDescription = "No address could be found for the provided coordinates.";
+                } else if (data.error_message) {
+                    errorDescription = data.error_message;
+                }
+
+                setLocationName(`Error: ${data.status}`);
                 toast({
                     variant: "destructive",
                     title: "Location Error",
-                    description: "Could not find a valid address for your location.",
+                    description: errorDescription,
                 });
             }
         } catch (error) {
@@ -550,6 +560,8 @@ async function onSubmit(data: ComplaintFormValues) {
                 title: "Location Error",
                 description: "Could not retrieve your location address. Please check your network.",
             });
+        } finally {
+            setIsFetchingLocation(false);
         }
     };
 
@@ -562,9 +574,7 @@ async function onSubmit(data: ComplaintFormValues) {
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     form.setValue("location", { type: "Point", coordinates: [longitude, latitude] }, { shouldValidate: true });
-                    getAddressFromCoordinates(latitude, longitude).finally(() => {
-                        setIsFetchingLocation(false);
-                    });
+                    getAddressFromCoordinates(latitude, longitude);
                 },
                 (error) => {
                     console.error("Error getting location:", error);
