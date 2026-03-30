@@ -144,7 +144,13 @@ export default function ComplaintDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="w-full sm:w-auto"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
+                    {complaint.status !== 'Resolved' && (
+                        <Button variant="outline" asChild className="w-full sm:w-auto">
+                            <Link href={`/dashboard/citizen/complaints/${complaint._id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                            </Link>
+                        </Button>
+                    )}
                 </div>
             </div>
 

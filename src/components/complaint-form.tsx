@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -64,6 +65,20 @@ interface ComplaintFormProps {
     complaint?: Complaint;
 }
 
+const getInitialDeadline = (deadline: any): Date | undefined => {
+    if (!deadline) return undefined;
+    // Firestore Timestamps have a toDate() method
+    if (typeof deadline.toDate === 'function') {
+        return deadline.toDate();
+    }
+    // Handle JS Date objects, strings, or numbers
+    const date = new Date(deadline);
+    if (!isNaN(date.getTime())) {
+        return date;
+    }
+    return undefined;
+};
+
 export function ComplaintForm({ complaint }: ComplaintFormProps) {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -100,12 +115,12 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     defaultValues: {
       title: complaint?.title || "",
       description: complaint?.description || "",
-      tags: complaint?.tags.join(", ") || "",
+      tags: complaint?.tags?.join(", ") || "",
       location: complaint?.location || undefined,
       category: complaint?.category || "",
       priority: complaint?.priority || "",
       severity: complaint?.severity || "",
-      deadline: complaint?.deadline ? new Date(complaint.deadline) : undefined,
+      deadline: getInitialDeadline(complaint?.deadline),
       recommendedDepartment: complaint?.initialDepartmentId,
     },
   })
