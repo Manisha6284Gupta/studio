@@ -1,7 +1,8 @@
 "use server";
 
-import { categorizeComplaint, ComplaintCategorizationAndRoutingInput } from "@/ai/flows/ai-complaint-categorization-and-routing";
-import { translateTextToEnglish, TranslateTextInput } from "@/ai/flows/translate-text-flow";
+import { categorizeComplaint } from "@/ai/flows/ai-complaint-categorization-and-routing";
+import { translateTextToEnglish } from "@/ai/flows/translate-text-flow";
+import type { ComplaintCategorizationAndRoutingInput, TranslateTextInput } from "@/lib/ai-types";
 
 export async function runCategorizeComplaint(input: Omit<ComplaintCategorizationAndRoutingInput, 'currentDate'>) {
     try {

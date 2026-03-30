@@ -8,17 +8,9 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { TranslateTextInput, TranslateTextInputSchema, TranslateTextOutput, TranslateTextOutputSchema } from '@/lib/ai-types';
 
-const TranslateTextInputSchema = z.object({
-  text: z.string().describe('The text to translate.'),
-});
-export type TranslateTextInput = z.infer<typeof TranslateTextInputSchema>;
-
-const TranslateTextOutputSchema = z.object({
-  translatedText: z.string().describe('The translated English text.'),
-});
-export type TranslateTextOutput = z.infer<typeof TranslateTextOutputSchema>;
+export { TranslateTextInput, TranslateTextOutput };
 
 export async function translateTextToEnglish(input: TranslateTextInput): Promise<TranslateTextOutput> {
   return translateTextFlow(input);

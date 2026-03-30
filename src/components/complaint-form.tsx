@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { runCategorizeComplaint, runTranslateText } from "@/lib/actions"
-import { ComplaintCategorizationAndRoutingOutput } from "@/ai/flows/ai-complaint-categorization-and-routing"
+import type { ComplaintCategorizationAndRoutingOutput } from "@/lib/ai-types"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 import { useUser, useFirestore, errorEmitter } from "@/firebase";
