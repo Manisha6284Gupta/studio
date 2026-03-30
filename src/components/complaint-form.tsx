@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -359,7 +360,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             description: data.description,
             ...(data.location && { location: data.location }),
             citizenId: user.uid,
-            initialDepartmentId: data.recommendedDepartment || "Unassigned",
+            initialDepartmentId: data.recommendedDepartment || data.category || "Unassigned",
             priority: data.priority || "Medium",
             severity: data.severity || "Medium",
             category: data.category,
