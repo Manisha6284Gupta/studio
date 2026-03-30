@@ -23,9 +23,9 @@ export interface ComplaintFeedback {
 
 export interface Escalation {
   isEscalated: boolean;
-  escalatedTo: string; // ObjectId as string
-  escalationReason: string;
-  escalationDate: Date;
+  escalatedTo?: string; // ObjectId as string
+  escalationReason?: string;
+  escalationDate?: Date;
 }
 
 export interface ResolutionDetails {
@@ -64,7 +64,10 @@ export interface Complaint {
   resolutionDetails?: ResolutionDetails;
   resolutionTime?: number; // in minutes
   externalReference?: string;
-  escalation?: Escalation;
+  isEscalated: boolean;
+  escalationReason?: string;
+  escalationDate?: Date;
+  escalatedTo?: string; // ObjectId as string
   feedback?: ComplaintFeedback;
   attachments?: ComplaintAttachment[];
   resolutionActionType?: ResolutionActionType;

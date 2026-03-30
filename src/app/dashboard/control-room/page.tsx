@@ -9,13 +9,15 @@ import { StatsCards } from "@/components/stats-cards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, doc } from "firebase/firestore";
-import type { Complaint } from "@/lib/types";
+import type { Complaint, ComplaintStatus } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isSameDay } from "date-fns";
 
 const PageSkeleton = () => (
     <div className="space-y-8">
         <Skeleton className="w-full aspect-video rounded-lg" />
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-5">
+            <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
@@ -68,6 +70,12 @@ export default function ControlRoomDashboardPage() {
         return rawComplaints.map(c => ({ ...c, _id: c.id } as Complaint));
     }, [rawComplaints]);
 
+    const [filteredComplaints, setFilteredComplaints] = React.useState<Complaint[]>([]);
+    
+    React.useEffect(() => {
+        setFilteredComplaints(complaints);
+    }, [complaints]);
+
     const isLoading = isUserLoading || isRoleLoading;
 
     // If role check is done and user is not control room staff, show access denied.
@@ -88,16 +96,39 @@ export default function ControlRoomDashboardPage() {
     }
     
     const stats = React.useMemo(() => {
-        if (isComplaintsLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        if (isComplaintsLoading || !complaints || complaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0, escalated: 0 };
         return {
             total: complaints.length,
             resolved: complaints.filter(c => c.status === 'Resolved').length,
             pending: complaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
             overdue: complaints.filter(c => c.status === 'Overdue').length,
+            escalated: complaints.filter(c => c.isEscalated).length,
         }
     }, [complaints, isComplaintsLoading]);
+    
+    const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date; showEscalatedOnly?: boolean; }) => {
+        let filtered = [...complaints];
 
-    const locations = React.useMemo(() => complaints.map(c => c.location).filter(Boolean), [complaints]);
+        if (filters.applicationNumber) {
+            filtered = filtered.filter(c => c.applicationNumber.toLowerCase().includes(filters.applicationNumber!.toLowerCase()));
+        }
+
+        if (filters.status && filters.status !== 'all') {
+            filtered = filtered.filter(c => c.status === filters.status);
+        }
+        
+        if (filters.date) {
+            filtered = filtered.filter(c => isSameDay(new Date(c.createdAt), filters.date!));
+        }
+
+        if (filters.showEscalatedOnly) {
+            filtered = filtered.filter(c => c.isEscalated);
+        }
+        
+        setFilteredComplaints(filtered);
+    }, [complaints]);
+
+    const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter(Boolean), [filteredComplaints]);
     
     if (isLoading || (controlRoomStaff && isComplaintsLoading)) {
         return <PageSkeleton />;
@@ -125,9 +156,9 @@ export default function ControlRoomDashboardPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="px-4 sm:px-6 lg:px-8">
-                                <ComplaintsFilters />
+                                <ComplaintsFilters onFilterChange={handleFilterChange} />
                             </CardContent>
-                            <ComplaintsTable complaints={complaints} view="control-room" />
+                            <ComplaintsTable complaints={filteredComplaints} view="control-room" />
                         </Card>
                     </div>
                     <div className="lg:col-span-2">

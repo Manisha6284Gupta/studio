@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, Send } from 'lucide-react';
 
 interface Stats {
   total: number;
   resolved: number;
   pending: number;
   overdue: number;
+  escalated?: number;
 }
 
 interface StatsCardsProps {
@@ -20,8 +21,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
     { title: 'Overdue', value: stats.overdue, icon: AlertTriangle, color: 'text-destructive' },
   ];
 
+  if (stats.escalated !== undefined) {
+    statItems.push({ title: 'Escalated', value: stats.escalated, icon: Send, color: 'text-amber-500' });
+  }
+
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className={`grid gap-4 md:grid-cols-2 ${stats.escalated !== undefined ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
       {statItems.map((item) => (
         <Card key={item.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">

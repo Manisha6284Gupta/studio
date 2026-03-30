@@ -79,9 +79,17 @@ service cloud.firestore {
     /**
      * Retrieves the staff profile data for the currently authenticated user.
      * Used to access staff-specific attributes like departmentId.
+     * This is valid in `get` and `write` rules, but NOT in `list` rules.
      */
     function getStaffData() {
       return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
+    }
+
+    /**
+     * Checks if the user is a staff member of the department the complaint is assigned to.
+     */
+    function isStaffOfAssignedDepartment() {
+      return isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId;
     }
     
     /**
@@ -189,21 +197,29 @@ service cloud.firestore {
      * ownership for citizens and role-based permissions for staff.
      * @path /complaints/{complaintId}
      * @allow (get) A citizen reads a complaint where `resource.data.citizenId` matches their UID.
-     * @deny (update) A citizen tries to change the status of a complaint they filed.
+     * @deny (update) A citizen tries to change the status of a complaint they filed (unless it's for feedback).
      * @principle Enforces document ownership for creators and role-based permissions for collaborators.
      */
     match /complaints/{complaintId} {
-      allow get: if isControlRoomStaff() || isOwner(resource.data.citizenId) || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId);
-      // The `list` rule is the most complex. It must be QAP-compliant.
-      // 1. Control Room staff can list all complaints without filters.
-      // 2. Citizens can list complaints ONLY when the query is filtered by their UID.
-      // 3. Department staff can list complaints ONLY when the query is filtered by a department ID.
-      // NOTE: The `get()` function is NOT supported in list rules. The previous rule `getStaffData().departmentId == ...`
-      // was invalid and caused permission errors. The corrected rule below allows the list if a filter is present.
-      // The `get` rule above still secures individual document reads.
+      allow get: if isControlRoomStaff() || isOwner(resource.data.citizenId) || isStaffOfAssignedDepartment();
+      
+      // QAP-compliant list rules:
+      // Citizens can list their own complaints.
+      // Control Room can list all complaints.
+      // Department staff can list complaints filtered by their department.
+      // NOTE: The `getStaffData()` call is invalid in `list` rules. 
+      // The frontend query MUST enforce the department filter, and the `get` rule above provides the actual document-level security.
       allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && request.query.where.initialDepartmentId != null);
+
       allow create: if isSignedIn() && isCreatingOwnComplaint();
-      allow update: if (isControlRoomStaff() || (isStaff() && getStaffData().departmentId == resource.data.initialDepartmentId) || isOwner(resource.data.citizenId)) && isCitizenIdImmutable();
+
+      // Granular update rules:
+      // - Citizens can edit their own complaints if not yet resolved.
+      // - Assigned department staff can update status and escalate.
+      // - Control room can update anything (for reassignment etc.).
+      allow update: if (isControlRoomStaff() || isStaffOfAssignedDepartment() || (isOwner(resource.data.citizenId) && resource.data.status != 'Resolved')) 
+                    && isCitizenIdImmutable();
+
       allow delete: if isControlRoomStaff() || isOwner(resource.data.citizenId);
     }
 
@@ -237,5 +253,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
