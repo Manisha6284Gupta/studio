@@ -8,9 +8,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { TranslateTextInput, TranslateTextInputSchema, TranslateTextOutput, TranslateTextOutputSchema } from '@/lib/ai-types';
+import { TranslateTextInputSchema, TranslateTextOutputSchema } from '@/lib/ai-types';
+import type { TranslateTextInput, TranslateTextOutput } from '@/lib/ai-types';
 
-export { TranslateTextInput, TranslateTextOutput };
+export type { TranslateTextInput, TranslateTextOutput };
 
 export async function translateTextToEnglish(input: TranslateTextInput): Promise<TranslateTextOutput> {
   return translateTextFlow(input);

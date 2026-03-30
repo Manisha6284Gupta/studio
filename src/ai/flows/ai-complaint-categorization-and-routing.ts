@@ -9,9 +9,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingInputSchema, ComplaintCategorizationAndRoutingOutput, ComplaintCategorizationAndRoutingOutputSchema } from '@/lib/ai-types';
+import { ComplaintCategorizationAndRoutingInputSchema, ComplaintCategorizationAndRoutingOutputSchema } from '@/lib/ai-types';
+import type { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingOutput } from '@/lib/ai-types';
 
-export { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingOutput };
+export type { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingOutput };
 
 
 export async function categorizeComplaint(input: Omit<ComplaintCategorizationAndRoutingInput, 'currentDate'>): Promise<ComplaintCategorizationAndRoutingOutput> {
