@@ -1007,8 +1007,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                         src={recordedVideoUrl}
                         className="w-full aspect-video"
                         controls
-                        autoPlay
-                        loop
                     />
                 )}
                 
