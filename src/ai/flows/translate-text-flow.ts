@@ -2,16 +2,13 @@
 /**
  * @fileOverview A Genkit flow for translating text into English.
  *
- * - translateTextToEnglish - A function that handles the translation.
- * - TranslateTextInput - The input type for the translation function.
- * - TranslateTextOutput - The return type for the translation function.
+ * This file exports the following:
+ * - translateTextToEnglish: A function that handles the translation.
  */
 
 import { ai } from '@/ai/genkit';
 import { TranslateTextInputSchema, TranslateTextOutputSchema } from '@/lib/ai-types';
 import type { TranslateTextInput, TranslateTextOutput } from '@/lib/ai-types';
-
-export type { TranslateTextInput, TranslateTextOutput };
 
 export async function translateTextToEnglish(input: TranslateTextInput): Promise<TranslateTextOutput> {
   return translateTextFlow(input);

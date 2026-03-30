@@ -3,16 +3,13 @@
  * @fileOverview A Genkit flow for analyzing citizen complaints to automatically categorize them,
  * suggest tags, recommend departments, and propose initial priority, severity, and deadline.
  *
- * - categorizeComplaint - A function that handles the complaint categorization and routing process.
- * - ComplaintCategorizationAndRoutingInput - The input type for the categorizeComplaint function.
- * - ComplaintCategorizationAndRoutingOutput - The return type for the categorizeComplaint function.
+ * This file exports the following:
+ * - categorizeComplaint: A function that handles the complaint categorization and routing process.
  */
 
 import { ai } from '@/ai/genkit';
 import { ComplaintCategorizationAndRoutingInputSchema, ComplaintCategorizationAndRoutingOutputSchema } from '@/lib/ai-types';
 import type { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingOutput } from '@/lib/ai-types';
-
-export type { ComplaintCategorizationAndRoutingInput, ComplaintCategorizationAndRoutingOutput };
 
 
 export async function categorizeComplaint(input: Omit<ComplaintCategorizationAndRoutingInput, 'currentDate'>): Promise<ComplaintCategorizationAndRoutingOutput> {
