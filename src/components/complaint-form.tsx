@@ -93,7 +93,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo');
   const [isRecording, setIsRecording] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   
@@ -516,7 +515,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     const handleOpenCamera = (mode: 'photo' | 'video') => {
         setMediaFile(null);
         setHasCameraPermission(null);
-        setCapturedImage(null);
         setRecordedVideoUrl(null);
         setCameraMode(mode);
         setIsCameraOpen(true);
@@ -527,7 +525,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             mediaRecorderRef.current.stop();
         }
         setIsRecording(false);
-        setCapturedImage(null);
         if (recordedVideoUrl) {
           URL.revokeObjectURL(recordedVideoUrl);
           setRecordedVideoUrl(null);
@@ -546,10 +543,13 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             if (context) {
                 context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
                 const imageDataUrl = canvas.toDataURL('image/png');
-                setCapturedImage(imageDataUrl);
+                
+                setMediaFile({ dataUrl: imageDataUrl, type: 'image' });
+                handleCloseCamera();
+                
                 toast({
                     title: "Photo Captured!",
-                    description: "You can now save the photo or retake it.",
+                    description: "Your photo has been attached to the complaint.",
                 });
             }
         } else {
@@ -559,18 +559,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 description: "Camera not ready. Please try again in a moment.",
             });
         }
-    };
-
-    const handleSavePhoto = () => {
-        if (capturedImage) {
-            setMediaFile({ dataUrl: capturedImage, type: 'image' });
-            toast({ title: 'Image saved successfully!' });
-            handleCloseCamera();
-        }
-    };
-
-    const handleRetakePhoto = () => {
-        setCapturedImage(null);
     };
 
     const handleStartRecording = () => {
@@ -968,7 +956,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                   <AlertDialogTitle>
                       {cameraMode === 'photo' ? 'Live Camera' : 'Record Video'}
                   </AlertDialogTitle>
-                   {(capturedImage || recordedVideoUrl) ? (
+                   {(recordedVideoUrl) ? (
                         <AlertDialogDescription>Preview your media before saving.</AlertDialogDescription>
                    ) : hasCameraPermission === false ? (
                         <AlertDialogDescription>Please grant camera permissions to continue.</AlertDialogDescription>
@@ -985,7 +973,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     ref={videoRef}
                     className={cn(
                         "w-full aspect-video object-cover",
-                        (capturedImage || recordedVideoUrl || !hasCameraPermission) && "hidden"
+                        (recordedVideoUrl || !hasCameraPermission) && "hidden"
                     )}
                     autoPlay
                     muted
@@ -996,10 +984,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                     <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
                         <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC
                     </div>
-                )}
-
-                {capturedImage && (
-                    <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
                 )}
 
                 {recordedVideoUrl && (
@@ -1030,17 +1014,10 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
               </div>
               <AlertDialogFooter>
                     {cameraMode === 'photo' ? (
-                        capturedImage ? (
-                            <>
-                                <Button variant="outline" onClick={handleRetakePhoto}>Retake</Button>
-                                <AlertDialogAction onClick={handleSavePhoto}>Save Photo</AlertDialogAction>
-                            </>
-                        ) : (
-                            <>
-                                <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</AlertDialogAction>
-                            </>
-                        )
+                        <>
+                            <AlertDialogCancel onClick={handleCloseCamera}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</AlertDialogAction>
+                        </>
                     ) : ( // video mode
                         recordedVideoUrl ? (
                             <>
