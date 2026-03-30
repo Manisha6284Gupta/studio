@@ -523,7 +523,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     };
     
     const handleCapture = () => {
-        if (videoRef.current && canvasRef.current) {
+        if (videoRef.current && canvasRef.current && videoRef.current.videoWidth > 0) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
             canvas.width = video.videoWidth;
@@ -534,6 +534,12 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 const imageDataUrl = canvas.toDataURL('image/png');
                 setCapturedImage(imageDataUrl);
             }
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Capture Failed",
+                description: "Camera not ready. Please try again in a moment.",
+            });
         }
     };
 
@@ -950,24 +956,29 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                         <AlertDialogDescription>Please grant camera permissions to continue.</AlertDialogDescription>
                    ) : hasCameraPermission === null ? (
                         <AlertDialogDescription>Waiting for camera permission...</AlertDialogDescription>
-                   ) : null}
+                   ) : (
+                        <AlertDialogDescription>
+                           {cameraMode === 'photo' ? 'Position the subject in the frame and capture.' : 'Press record to start. Press stop when done.'}
+                        </AlertDialogDescription>
+                   )}
               </AlertDialogHeader>
               <div className="relative bg-black rounded-lg overflow-hidden border flex items-center justify-center min-h-[300px]">
                 <video
                     ref={videoRef}
                     className={cn(
-                        "w-full h-auto",
+                        "w-full aspect-video object-cover",
                         (capturedImage || recordedVideoUrl || !hasCameraPermission) && "hidden"
                     )}
                     autoPlay
                     muted
                     playsInline
                 />
-                
-                {hasCameraPermission && !isRecording && (
-                    <video ref={videoRef} className="w-full aspect-video" autoPlay muted />
-                )}
 
+                {isRecording && (
+                    <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
+                        <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC
+                    </div>
+                )}
 
                 {capturedImage && (
                     <Image src={capturedImage} alt="Captured preview" width={500} height={375} className="w-full aspect-video object-contain" />
@@ -979,16 +990,15 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                         className="w-full aspect-video"
                         controls
                         autoPlay
-                        muted
-                        playsInline
+                        loop
                     />
                 )}
                 
                 {hasCameraPermission === false && (
-                     <Alert variant="destructive">
+                     <Alert variant="destructive" className="m-4">
                         <AlertTitle>Camera Access Required</AlertTitle>
                         <AlertDescription>
-                            Please allow camera access to use this feature.
+                            Please allow camera access in your browser settings to use this feature.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -996,15 +1006,8 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                 {hasCameraPermission === null && (
                     <div className="text-center text-muted-foreground p-4">
                         <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
-                        <p>Waiting for camera...</p>
+                        <p>Requesting camera access...</p>
                     </div>
-                )}
-                
-                 {isRecording && (
-                    <>
-                        <video ref={videoRef} className="w-full aspect-video" autoPlay muted />
-                        <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full"><div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC</div>
-                    </>
                 )}
               </div>
               <AlertDialogFooter>
