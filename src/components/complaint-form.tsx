@@ -110,6 +110,14 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
       recommendedDepartment: complaint?.initialDepartmentId,
     },
   })
+  
+  useEffect(() => {
+    if (complaint?.image) {
+      setMediaFile({ dataUrl: complaint.image, type: complaint.image.startsWith('data:video') ? 'video' : 'image' });
+    } else {
+      setMediaFile(null);
+    }
+  }, [complaint]);
 
   useEffect(() => {
     return () => {
@@ -323,6 +331,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             deadline: data.deadline || null,
             tags: data.tags?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
             updatedAt: serverTimestamp(),
+            image: mediaFile?.dataUrl ?? null,
         };
 
         updateDoc(complaintRef, updatedComplaintData)
@@ -360,7 +369,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             description: data.description,
             ...(data.location && { location: data.location }),
             citizenId: user.uid,
-            initialDepartmentId: data.recommendedDepartment || data.category || "Unassigned",
+            initialDepartmentId: data.recommendedDepartment || data.category,
             priority: data.priority || "Medium",
             severity: data.severity || "Medium",
             category: data.category,
@@ -372,6 +381,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             resolutionStatus: "Unresolved",
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            image: mediaFile?.dataUrl ?? null,
             history: [{
                 action: 'Complaint Submitted',
                 status: 'Pending',

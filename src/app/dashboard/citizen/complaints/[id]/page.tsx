@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from "react";
@@ -5,7 +6,6 @@ import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import type { Complaint, ComplaintHistory } from "@/lib/types";
 import { ArrowLeft, Calendar, Check, Edit, MessageSquare, Star, User } from "lucide-react";
 import Image from "next/image";
@@ -121,8 +121,6 @@ export default function ComplaintDetailPage() {
         return { ...rawComplaint, _id: rawComplaint.id } as Complaint;
     }, [rawComplaint]);
 
-    const complaintImage = PlaceHolderImages.find(p => p.id === 'complaint-image-1');
-
     if (isLoading) {
         return <ComplaintDetailSkeleton />;
     }
@@ -161,15 +159,22 @@ export default function ComplaintDetailPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-foreground">{complaint.description}</p>
-                            {complaintImage && (
-                                <Image
-                                    src={complaintImage.imageUrl}
-                                    data-ai-hint={complaintImage.imageHint}
-                                    alt="Complaint Image"
-                                    width={400}
-                                    height={300}
-                                    className="mt-4 rounded-lg w-full h-auto max-w-md"
-                                />
+                            {complaint.image && (
+                                complaint.image.startsWith('data:image') ? (
+                                    <Image
+                                        src={complaint.image}
+                                        alt="Complaint Media"
+                                        width={400}
+                                        height={300}
+                                        className="mt-4 rounded-lg w-full h-auto max-w-md"
+                                    />
+                                ) : (
+                                    <video
+                                        src={complaint.image}
+                                        controls
+                                        className="mt-4 rounded-lg w-full h-auto max-w-md"
+                                    />
+                                )
                             )}
                         </CardContent>
                     </Card>
