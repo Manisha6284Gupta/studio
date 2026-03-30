@@ -129,17 +129,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
     if (complaint) {
         setImageFile(complaint.imageUrl || null);
         setVideoFile(complaint.videoUrl || null);
-        // For backward compatibility
-        if (complaint.image) {
-            if (complaint.image.startsWith('data:image') && !complaint.imageUrl) {
-                setImageFile(complaint.image);
-            } else if (complaint.image.startsWith('data:video') && !complaint.videoUrl) {
-                setVideoFile(complaint.image);
-            }
-        }
-    } else {
-        setImageFile(null);
-        setVideoFile(null);
     }
   }, [complaint]);
 
@@ -187,7 +176,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-}, [isCameraOpen, cameraMode, toast]);
+}, [isCameraOpen, cameraMode]);
 
 
   const handleMicClick = () => {
@@ -992,7 +981,6 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
                         (recordedVideoUrl || !hasCameraPermission) && "hidden"
                     )}
                     autoPlay
-                    muted
                     playsInline
                 />
 
