@@ -40,7 +40,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 
 import { useUser, useFirestore, errorEmitter, useStorage } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors"
-import { addDoc, collection, serverTimestamp, doc, updateDoc, type DocumentReference } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, doc, updateDoc, setDoc, type DocumentReference } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { Complaint } from "@/lib/types"
 
@@ -536,7 +536,7 @@ async function onSubmit(data: ComplaintFormValues) {
                     description: `Location captured: ${address}`,
                 });
             } else {
-                let errorDescription = "Could not find a valid address for your location.";
+                let errorDescription = "Address not found for the captured coordinates.";
                 if (data.status === 'REQUEST_DENIED') {
                     errorDescription = "The request to Google Maps was denied. Please ensure your API key is correct and has the Geocoding API enabled in the Google Cloud Console.";
                 } else if (data.status === 'ZERO_RESULTS') {
@@ -1095,6 +1095,7 @@ async function onSubmit(data: ComplaintFormValues) {
                     )}
                     autoPlay
                     playsInline
+                    
                 />
 
                 {isRecording && (
@@ -1130,14 +1131,14 @@ async function onSubmit(data: ComplaintFormValues) {
               <AlertDialogFooter>
                     {cameraMode === 'photo' ? (
                         <>
-                            <Button variant="ghost" onClick={handleCloseCamera}>Cancel</Button>
-                            <Button onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</Button>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCapture} disabled={!hasCameraPermission}>Capture Photo</AlertDialogAction>
                         </>
                     ) : ( // video mode
                         recordedVideoUrl ? (
                             <>
                                 <Button variant="outline" onClick={handleRetakeVideo}>Retake</Button>
-                                <Button onClick={handleSaveVideo}>Save Video</Button>
+                                <AlertDialogAction onClick={handleSaveVideo}>Save Video</AlertDialogAction>
                             </>
                         ) : isRecording ? (
                              <Button onClick={handleStopRecording} variant="destructive">
@@ -1145,8 +1146,8 @@ async function onSubmit(data: ComplaintFormValues) {
                             </Button>
                         ) : (
                             <>
-                                <Button variant="ghost" onClick={handleCloseCamera}>Cancel</Button>
-                                <Button onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</Button>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</AlertDialogAction>
                             </>
                         )
                     )}
