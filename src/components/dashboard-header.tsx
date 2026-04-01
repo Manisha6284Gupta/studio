@@ -11,12 +11,7 @@ import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from "@/fireb
 import { signOut } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-
-const getRoleFromPathname = (pathname: string) => {
-    if (pathname.startsWith('/dashboard/department')) return 'department';
-    if (pathname.startsWith('/dashboard/control-room')) return 'control-room';
-    return 'citizen';
-}
+import { useState, useEffect } from "react";
 
 export function DashboardHeader() {
     const pathname = usePathname();
@@ -25,13 +20,37 @@ export function DashboardHeader() {
     const auth = useAuth();
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
-    const role = getRoleFromPathname(pathname);
+    const [role, setRole] = useState<'citizen' | 'department' | 'control-room' | null>(null);
+    const [profileCollection, setProfileCollection] = useState<'citizens' | 'staff' | null>(null);
+
+    const staffProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'staff', user.uid);
+    }, [firestore, user]);
+
+    const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{ role: 'Department Staff' | 'Control Room Staff' }>(staffProfileRef);
+
+    useEffect(() => {
+        if (!isUserLoading && !isStaffLoading) {
+            if (staffProfile) {
+                setProfileCollection('staff');
+                if (staffProfile.role === 'Control Room Staff') {
+                    setRole('control-room');
+                } else {
+                    setRole('department');
+                }
+            } else if (user) {
+                setProfileCollection('citizens');
+                setRole('citizen');
+            }
+        }
+    }, [user, staffProfile, isUserLoading, isStaffLoading]);
+
 
     const userProfileRef = useMemoFirebase(() => {
-        if (!user) return null;
-        const collection = role === 'citizen' ? 'citizens' : 'staff';
-        return doc(firestore, collection, user.uid);
-    }, [firestore, user, role]);
+        if (!user || !profileCollection) return null;
+        return doc(firestore, profileCollection, user.uid);
+    }, [firestore, user, profileCollection]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<{fullName: string, email: string, avatar?: string}>(userProfileRef);
 
@@ -42,7 +61,7 @@ export function DashboardHeader() {
         });
     }
     
-    const isLoading = isUserLoading || (user && isProfileLoading);
+    const isLoading = isUserLoading || isStaffLoading || isProfileLoading;
 
     const displayName = userProfile?.fullName || user?.email || "User";
     const displayEmail = userProfile?.email || user?.email || "";

@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { useState, useEffect } from "react";
 
 const citizenNav = [
   { name: "Dashboard", href: "/dashboard/citizen", icon: LayoutDashboard },
@@ -70,7 +73,35 @@ function getBaseDashboardPath(role: string) {
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const role = getRoleFromPathname(pathname);
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const [role, setRole] = useState<'citizen' | 'department' | 'control-room'>(() => getRoleFromPathname(pathname));
+
+  const staffProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'staff', user.uid);
+  }, [firestore, user]);
+
+  const { data: staffProfile, isLoading: isStaffLoading } = useDoc<{ role: 'Department Staff' | 'Control Room Staff' }>(staffProfileRef);
+
+  useEffect(() => {
+    // This effect ensures the role is updated based on profile data, which is more reliable than the URL path.
+    if (!isUserLoading && !isStaffLoading) {
+      if (staffProfile) {
+        if (staffProfile.role === 'Control Room Staff') {
+          setRole('control-room');
+        } else {
+          setRole('department');
+        }
+      } else {
+        // If there's no staff profile, they must be a citizen.
+        setRole('citizen');
+      }
+    }
+  }, [user, staffProfile, isUserLoading, isStaffLoading]);
+
+
   const navItems = getNavItems(role);
   const baseDashboardPath = getBaseDashboardPath(role);
 
