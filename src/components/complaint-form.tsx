@@ -1095,7 +1095,6 @@ async function onSubmit(data: ComplaintFormValues) {
                     )}
                     autoPlay
                     playsInline
-                    
                 />
 
                 {isRecording && (
@@ -1147,7 +1146,7 @@ async function onSubmit(data: ComplaintFormValues) {
                         ) : (
                             <>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</AlertDialogAction>
+                                <Button onClick={handleStartRecording} disabled={!hasCameraPermission}>Start Recording</Button>
                             </>
                         )
                     )}
