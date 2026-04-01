@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { DepartmentStatusChart } from "@/components/department-status-chart";
 import { ComplaintsFilters } from "@/components/complaints-filters";
 import { ComplaintsMap } from "@/components/complaints-map";
@@ -50,6 +51,13 @@ const PageSkeleton = () => (
 export default function ControlRoomDashboardPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/');
+        }
+    }, [isUserLoading, user, router]);
 
     const controlRoomStaffRef = useMemoFirebase(() => {
         if (!user?.uid) return null;
@@ -115,7 +123,11 @@ export default function ControlRoomDashboardPage() {
 
     const isLoading = isUserLoading || isRoleLoading;
 
-    if (!isLoading && !controlRoomStaff) {
+    if (isLoading || !user) {
+        return <PageSkeleton />;
+    }
+
+    if (!controlRoomStaff) {
         return (
             <div className="flex h-full items-center justify-center">
                 <Card className="w-full max-w-md text-center">
@@ -131,7 +143,7 @@ export default function ControlRoomDashboardPage() {
         );
     }
     
-    if (isLoading || (controlRoomStaff && isComplaintsLoading)) {
+    if (isComplaintsLoading) {
         return <PageSkeleton />;
     }
 

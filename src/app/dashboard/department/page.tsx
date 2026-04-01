@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { ComplaintsTable } from "@/components/complaints-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,13 @@ const PageSkeleton = () => (
 export default function DepartmentDashboardPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/');
+        }
+    }, [isUserLoading, user, router]);
 
     const staffRef = useMemoFirebase(() => {
         if (!user?.uid) return null;
@@ -90,7 +98,11 @@ export default function DepartmentDashboardPage() {
 
     const isLoading = isUserLoading || isStaffLoading;
 
-    if (!isLoading && !staffProfile) {
+    if (isLoading || !user) {
+        return <PageSkeleton />;
+    }
+
+    if (!staffProfile) {
         return (
             <div className="flex h-full items-center justify-center">
                 <Card className="w-full max-w-md text-center">
@@ -106,7 +118,7 @@ export default function DepartmentDashboardPage() {
         );
     }
     
-    if (isLoading || (staffProfile && isComplaintsLoading)) {
+    if (isComplaintsLoading) {
         return <PageSkeleton />;
     }
 
