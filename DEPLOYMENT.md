@@ -60,4 +60,25 @@ Now you are ready to deploy.
 
 The Firebase CLI will build your Next.js application and deploy it to Firebase App Hosting. Once the deployment is complete, it will provide you with the URL where your application is live.
 
-That's it! Your CivicConnect application is now hosted and ready to be used.
+## Step 4: (Optional) Add a Custom Domain
+
+After deploying, you can point your own domain name (e.g., `www.your-app.com`) to your hosted application.
+
+1.  **Go to Firebase Console:**
+    Navigate to the [Firebase Console](https://console.firebase.google.com/) and select your project (`studio-4980755183-3866b`).
+
+2.  **Navigate to App Hosting:**
+    In the left-hand menu, go to **Build > App Hosting**. You will see your deployed backend.
+
+3.  **Add Custom Domain:**
+    Click on **"Manage"** for your backend, then go to the **"Custom domains"** tab and click the **"Add custom domain"** button.
+
+4.  **Follow the Wizard:**
+    *   **Enter Domain:** Type in the domain name you want to use (e.g., `www.my-civic-app.com`).
+    *   **Verify Ownership:** Firebase will provide you with a **TXT record**. You must add this record to the DNS settings on your domain registrar's website (e.g., Google Domains, GoDaddy, Namecheap). This step proves to Google that you own the domain.
+    *   **Add DNS Records:** Once verified, Firebase will give you one or more **A records** (IP addresses). You need to add these records to your domain's DNS settings as well. This points your domain to Firebase's servers.
+
+5.  **Wait for Propagation:**
+    DNS changes can take some time to update across the internet (anywhere from a few minutes to 24 hours). Once your domain is correctly pointing to Firebase, Firebase will automatically provision a free SSL certificate for it, so your site will be secure (HTTPS).
+
+That's it! Your CivicConnect application is now hosted and ready to be used with your custom URL.
