@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Mail, KeyRound, Shield, Loader2 } from 'lucide-react';
+import { Mail, KeyRound, Shield, Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,6 +33,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 
 export default function OrganizationLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
@@ -130,7 +131,16 @@ export default function OrganizationLoginPage() {
                     <Label>Password</Label>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
+                      <Input type={showPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" {...field} />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </Button>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -159,5 +169,3 @@ export default function OrganizationLoginPage() {
     </div>
   );
 }
-
-    
