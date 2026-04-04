@@ -306,7 +306,7 @@ export default function DepartmentComplaintDetailPage() {
                            <CardTitle>Location</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ComplaintsMap locations={complaint.location ? [complaint.location] : []} />
+                            <ComplaintsMap complaints={complaint ? [complaint] : []} />
                         </CardContent>
                     </Card>
                 </div>

@@ -122,8 +122,6 @@ export default function DepartmentDashboardPage() {
         setFilteredComplaints(complaints);
     }, [departmentComplaints]);
     
-    const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter((l): l is ComplaintLocation => !!l), [filteredComplaints]);
-
     const isLoading = isUserLoading || isStaffLoading || isComplaintsLoading;
 
     if (isLoading && !staffProfile) {
@@ -178,7 +176,7 @@ export default function DepartmentDashboardPage() {
                             <CardDescription>Map of filtered complaint locations.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ComplaintsMap locations={locations} />
+                            <ComplaintsMap complaints={filteredComplaints} />
                         </CardContent>
                     </Card>
                 </div>

@@ -1,15 +1,26 @@
 "use client";
 
 import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
-import type { ComplaintLocation } from "@/lib/types";
+import type { Complaint, ComplaintCategory } from "@/lib/types";
 import { useMemo } from "react";
 import { Skeleton } from "./ui/skeleton";
 
 interface ComplaintsMapProps {
-    locations: ComplaintLocation[];
+    complaints: Complaint[];
 }
 
-export function ComplaintsMap({ locations }: ComplaintsMapProps) {
+const categoryColors: Record<ComplaintCategory, string> = {
+    "Infrastructure": "#FF5733", // Vibrant Orange
+    "Utility": "#33CFFF", // Bright Sky Blue
+    "Health": "#FF33A8", // Hot Pink
+    "Environment": "#33FF57", // Lime Green
+    "Water Department": "#3357FF", // Royal Blue
+    "Road Department": "#A833FF", // Deep Purple
+    "Electricity": "#FFFF33", // Electric Yellow
+    "Other": "#B0B0B0" // Medium Gray
+};
+
+export function ComplaintsMap({ complaints }: ComplaintsMapProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     });
@@ -46,16 +57,27 @@ export function ComplaintsMap({ locations }: ComplaintsMapProps) {
                     zoomControl: true,
                 }}
             >
-                {locations.map((location, index) => (
-                    <MarkerF
-                        key={index}
-                        position={{
-                            lat: location.coordinates[1],
-                            lng: location.coordinates[0],
-                        }}
-                        title={`Complaint location ${index + 1}`}
-                    />
-                ))}
+                {complaints.filter(c => c.location).map((complaint) => {
+                    const color = categoryColors[complaint.category] || categoryColors.Other;
+                    return (
+                        <MarkerF
+                            key={complaint._id}
+                            position={{
+                                lat: complaint.location!.coordinates[1],
+                                lng: complaint.location!.coordinates[0],
+                            }}
+                            title={complaint.title}
+                            icon={{
+                                path: window.google.maps.SymbolPath.CIRCLE,
+                                fillColor: color,
+                                fillOpacity: 1,
+                                strokeColor: "white",
+                                strokeWeight: 1,
+                                scale: 8
+                            }}
+                        />
+                    )
+                })}
             </GoogleMap>
         </div>
     );

@@ -119,8 +119,6 @@ export default function ControlRoomDashboardPage() {
         setFilteredComplaints(filtered);
     }, [complaints]);
 
-    const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter(Boolean), [filteredComplaints]);
-
     const isLoading = isUserLoading || isRoleLoading;
 
     if (isLoading || !user) {
@@ -152,7 +150,7 @@ export default function ControlRoomDashboardPage() {
              <div className="-mx-4 sm:-mx-6 lg:-mx-8">
                 <Card className="rounded-none border-x-0 border-t-0">
                     <CardContent className="aspect-[18/9] p-0">
-                       <ComplaintsMap locations={locations} />
+                       <ComplaintsMap complaints={filteredComplaints} />
                     </CardContent>
                 </Card>
             </div>
