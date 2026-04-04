@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
-import { useParams, notFound } from "next/navigation";
+import { useMemo, useEffect } from "react";
+import { useParams, notFound, useRouter } from "next/navigation";
 import { ComplaintForm } from "@/components/complaint-form";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import type { Complaint } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as React from "react";
 
 const EditPageSkeleton = () => (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -27,20 +28,30 @@ export default function EditComplaintPage() {
     const params = useParams();
     const id = params.id as string;
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/login/citizen');
+        }
+    }, [isUserLoading, user, router]);
 
     const complaintRef = useMemoFirebase(() => {
         if (!id || !firestore) return null;
         return doc(firestore, 'complaints', id);
     }, [firestore, id]);
 
-    const { data: rawComplaint, isLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
+    const { data: rawComplaint, isLoading: isComplaintLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
     
     const complaint = useMemo(() => {
         if (!rawComplaint) return null;
         return { ...rawComplaint, _id: rawComplaint.id } as Complaint;
     }, [rawComplaint]);
+
+    const isLoading = isUserLoading || isComplaintLoading;
     
-    if (isLoading) {
+    if (isLoading || !user) {
         return <EditPageSkeleton />;
     }
 

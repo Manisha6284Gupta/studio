@@ -10,13 +10,65 @@ import Link from 'next/link';
 import { ComplaintsChart } from "@/components/complaints-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import type { Complaint } from "@/lib/types";
 import FormattedDate from "@/components/formatted-date";
+
+const CitizenDashboardSkeleton = () => (
+    <div className="space-y-8">
+        <div className="flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <div>
+                <div className="space-y-2">
+                    <Skeleton className="h-9 w-48" />
+                    <Skeleton className="h-5 w-64" />
+                </div>
+            </div>
+            <Skeleton className="h-10 w-36" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+        </div>
+        
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Your Complaints by Category</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-[350px]" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                     </div>
+                     <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+);
 
 
 export default function CitizenDashboardPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/login/citizen');
+        }
+    }, [isUserLoading, user, router]);
 
     const citizenRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -59,23 +111,21 @@ export default function CitizenDashboardPage() {
 
 
     const isLoading = isUserLoading || isCitizenLoading || isComplaintsLoading;
+    
+    if (isLoading || !user) {
+        return <CitizenDashboardSkeleton />;
+    }
+    
     const citizenName = citizen?.fullName?.split(' ')[0] || 'Citizen';
 
     return (
         <div className="space-y-8">
             <div className="flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
                 <div>
-                    {isLoading ? (
-                        <div className="space-y-2">
-                            <Skeleton className="h-9 w-48" />
-                            <Skeleton className="h-5 w-64" />
-                        </div>
-                    ) : (
-                        <>
-                            <h1 className="text-3xl font-headline font-bold">Welcome, {citizenName}!</h1>
-                            <p className="text-muted-foreground">Here&apos;s a summary of your civic engagement.</p>
-                        </>
-                    )}
+                    <>
+                        <h1 className="text-3xl font-headline font-bold">Welcome, {citizenName}!</h1>
+                        <p className="text-muted-foreground">Here&apos;s a summary of your civic engagement.</p>
+                    </>
                 </div>
                 <Button asChild>
                     <Link href="/dashboard/citizen/complaints/new">
@@ -101,12 +151,7 @@ export default function CitizenDashboardPage() {
                         <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {isLoading ? (
-                             <div className="space-y-4">
-                                <Skeleton className="h-16 w-full" />
-                                <Skeleton className="h-16 w-full" />
-                             </div>
-                        ) : recentActivity.length > 0 ? (
+                        {recentActivity.length > 0 ? (
                             recentActivity.map(complaint => (
                                 <div className="flex items-start gap-4" key={complaint._id}>
                                     <div className="bg-secondary p-3 rounded-full">

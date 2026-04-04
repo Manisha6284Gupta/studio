@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { CitizenComplaintsFilters } from "@/components/citizen-complaints-filters";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComplaintsMap } from "@/components/complaints-map";
@@ -59,6 +60,13 @@ const PageSkeleton = () => (
 export default function CitizenComplaintsPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/login/citizen');
+        }
+    }, [isUserLoading, user, router]);
 
     const complaintsQuery = useMemoFirebase(() => {
         if (!user) return null;
@@ -115,7 +123,7 @@ export default function CitizenComplaintsPage() {
 
     const isLoading = isUserLoading || isComplaintsLoading;
 
-    if (isLoading) {
+    if (isLoading || !user) {
         return <PageSkeleton />;
     }
 

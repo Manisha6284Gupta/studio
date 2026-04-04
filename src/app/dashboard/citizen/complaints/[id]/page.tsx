@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { ComplaintStatusBadge } from "@/components/complaint-status-badge";
 import { ComplaintsMap } from "@/components/complaints-map";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,12 @@ import type { Complaint, ComplaintHistory } from "@/lib/types";
 import { ArrowLeft, Calendar, Check, Edit, MessageSquare, Star, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import FormattedDate from "@/components/formatted-date";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as React from "react";
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -107,13 +108,21 @@ export default function ComplaintDetailPage() {
     const params = useParams();
     const id = params.id as string;
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.replace('/login/citizen');
+        }
+    }, [isUserLoading, user, router]);
 
     const complaintRef = useMemoFirebase(() => {
         if (!id || !firestore) return null;
         return doc(firestore, 'complaints', id);
     }, [firestore, id]);
 
-    const { data: rawComplaint, isLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
+    const { data: rawComplaint, isLoading: isComplaintLoading } = useDoc<Omit<Complaint, '_id'>>(complaintRef);
 
     const complaint = useMemo(() => {
         if (!rawComplaint) return null;
@@ -121,7 +130,9 @@ export default function ComplaintDetailPage() {
         return { ...rawComplaint, _id: rawComplaint.id } as Complaint;
     }, [rawComplaint]);
 
-    if (isLoading) {
+    const isLoading = isUserLoading || isComplaintLoading;
+
+    if (isLoading || !user) {
         return <ComplaintDetailSkeleton />;
     }
 
