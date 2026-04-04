@@ -7,24 +7,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { ChevronDown, Menu } from 'lucide-react';
+import { ChevronDown, Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-const navLinks = [
-    { href: "#features", label: "Features" },
-    { href: "#how-it-works", label: "How It Works" },
-];
 
 const AshokaChakraLogo = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="currentColor"
-    className="h-7 w-7 text-primary"
+    className="h-12 w-12 text-primary"
   >
     <path
       d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
@@ -40,158 +36,103 @@ const AshokaChakraLogo = () => (
   </svg>
 );
 
+const navLinks = [
+    { href: "#features", label: "Services" },
+    { href: "#", label: "Departments" },
+    { href: "/register/citizen", label: "Grievance" },
+    { href: "/dashboard/citizen/complaints", label: "Track Status" },
+    { href: "/dashboard/citizen", label: "User Dashboard" },
+];
+
 
 export function LandingNav() {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-    if (href.startsWith('#')) {
-      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      router.push(href);
-    }
-  };
-
-  const handleMobileLinkClick = (href: string) => {
-    setMobileMenuOpen(false);
-    if (href.startsWith('#')) {
-        setTimeout(() => {
-            document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-        }, 300); // delay to allow sheet to close
-    } else {
-      router.push(href);
-    }
-  };
-
   return (
-    <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 px-4 lg:px-6 h-20 flex items-center bg-background border-b"
-    )}>
-      <Link href="/" className="flex items-center justify-start gap-3">
-        <AshokaChakraLogo />
-        <div>
-            <span className="block font-headline text-2xl font-semibold text-foreground leading-tight">
-              JanSevaConnect
-            </span>
-            <span className="block text-xs font-medium text-muted-foreground leading-tight">
-              सत्यमेव जयते
-            </span>
-        </div>
-      </Link>
-      
-      {/* Desktop Nav */}
-      <nav className="ml-auto hidden md:flex gap-4 sm:gap-6 items-center">
-        {navLinks.map((link) => (
-             <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleLinkClick(e, link.href)}
-                className={cn(buttonVariants({ variant: "ghost" }), "text-muted-foreground")}
-            >
-                {link.label}
-            </a>
-        ))}
-       
-        {isClient ? (
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Login <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
-                  Citizen Login
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/login/organization')}>
-                  Organization Login
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  Register <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => router.push('/register/citizen')}>
-                  Citizen Registration
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/register/staff')}>
-                  Staff Registration
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" disabled>
-              Login <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-            <Button disabled>
-              Register <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </nav>
+    <nav className="w-full bg-background border-b shadow-sm">
+        <div className="container flex h-20 items-center">
+            <div className="flex items-center gap-4">
+                <Link href="/" className="flex items-center gap-3">
+                    <AshokaChakraLogo />
+                    <div>
+                        <span className="block font-headline text-2xl font-bold text-foreground leading-tight">
+                        JanSevaConnect
+                        </span>
+                        <span className="block text-sm font-medium text-muted-foreground leading-tight">
+                        सत्यमेव जयते
+                        </span>
+                    </div>
+                </Link>
+            </div>
+            
+            {/* Desktop Nav */}
+            <nav className="ml-12 hidden lg:flex gap-1 sm:gap-2 items-center">
+              {navLinks.map((link) => (
+                    <Link
+                        key={link.label}
+                        href={link.href}
+                        className={cn(buttonVariants({ variant: "ghost" }), "text-muted-foreground font-medium")}
+                    >
+                        {link.label}
+                    </Link>
+                ))}
+            </nav>
 
-      {/* Mobile Nav */}
-      <div className="ml-auto md:hidden">
-        {isClient ? (
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-foreground hover:bg-white/20 hover:text-foreground">
-                      <Menu className="h-6 w-6" />
-                      <span className="sr-only">Open menu</span>
-                  </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                  <div className="flex flex-col gap-6 pt-16">
-                       <Link href="/" className="flex items-center justify-center mb-4" onClick={() => setMobileMenuOpen(false)}>
-                          <AshokaChakraLogo />
-                          <span className="ml-2 font-headline text-2xl font-semibold text-foreground">JanSevaConnect</span>
-                      </Link>
-                      {navLinks.map((link) => (
-                          <button key={link.href} onClick={() => handleMobileLinkClick(link.href)} className="text-lg font-medium text-center">
-                              {link.label}
-                          </button>
-                      ))}
-                      <div className="mt-6 flex flex-col gap-4 px-4">
-                          <h3 className="text-sm font-semibold text-muted-foreground text-center">LOGIN</h3>
-                           <Button onClick={() => handleMobileLinkClick('/login/citizen')} className="w-full" variant="outline">
-                              Citizen Login
-                          </Button>
-                          <Button onClick={() => handleMobileLinkClick('/login/organization')} variant="outline" className="w-full">
-                              Organization Login
-                          </Button>
-                          <h3 className="text-sm font-semibold text-muted-foreground text-center pt-4">REGISTER</h3>
-                           <Button onClick={() => handleMobileLinkClick('/register/citizen')} className="w-full">
-                              Citizen Registration
-                          </Button>
-                          <Button onClick={() => handleMobileLinkClick('/register/staff')} className="w-full">
-                              Staff Registration
-                          </Button>
-                      </div>
-                  </div>
-              </SheetContent>
-          </Sheet>
-        ) : (
-             <Button variant="ghost" size="icon" disabled className="text-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Open menu</span>
-            </Button>
-        )}
-      </div>
-    </header>
+            <div className="ml-auto flex items-center gap-4">
+                 <div className="relative hidden md:block">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search services..." className="pl-10 w-48" />
+                </div>
+                <div className="hidden md:flex items-center gap-2">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                        Login <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
+                        Citizen Login
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/login/organization')}>
+                        Organization Login
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button>
+                        Register <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push('/register/citizen')}>
+                        Citizen Registration
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/register/staff')}>
+                        Staff Registration
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                {/* Mobile Nav */}
+                <div className="flex md:hidden">
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-foreground hover:bg-white/20 hover:text-foreground">
+                            <Menu className="h-6 w-6" />
+                            <span className="sr-only">Open menu</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right">
+                        {/* Mobile menu content would be redesigned here */}
+                    </SheetContent>
+                </Sheet>
+                </div>
+            </div>
+        </div>
+    </nav>
   );
 }

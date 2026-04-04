@@ -1,4 +1,5 @@
 import { LandingNav } from '@/components/landing-nav';
+import { TopBanner } from '@/components/top-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -84,10 +85,13 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <LandingNav />
-      <main className="flex-1">
+      <header className="sticky top-0 z-50 w-full bg-background shadow-sm">
+        <TopBanner />
+        <LandingNav />
+      </header>
+      <main className="flex-1 pt-32">
         {/* Hero Section */}
-        <section className="w-full pt-32 pb-16 md:pt-48 md:pb-24 lg:pt-56 lg:pb-32">
+        <section className="w-full pb-16 md:pb-24 lg:pb-32">
           <div className="container grid gap-10 px-4 md:px-6 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="space-y-6 text-center lg:text-left">
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.3)'}}>
