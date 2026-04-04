@@ -2,7 +2,7 @@ import { LandingNav } from '@/components/landing-nav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, FileText, Users, CheckCircle, Twitter, Facebook, Linkedin } from 'lucide-react';
+import { ArrowRight, FileText, Users, CircleCheckBig, Twitter, Facebook, Linkedin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -41,7 +41,7 @@ const features = [
     imageId: 'feature-2'
   },
   {
-    icon: <CheckCircle className="h-10 w-10 text-primary" />,
+    icon: <CircleCheckBig className="h-10 w-10 text-primary" />,
     title: 'Transparent Resolution Tracking',
     description: 'Monitor the status of your complaint in real-time from submission to final resolution via your personal dashboard.',
     imageId: 'feature-3'
@@ -81,9 +81,8 @@ export default function Home() {
                     src={heroImage.imageUrl}
                     data-ai-hint={heroImage.imageHint}
                     alt="Official Government of India Portal Background"
-                    layout="fill"
-                    objectFit="cover"
-                    className="z-0"
+                    fill
+                    className="z-0 object-cover"
                 />
             )}
             <div className="absolute inset-0 bg-black/50 z-10"></div>
@@ -193,9 +192,8 @@ export default function Home() {
                     src={ctaImage.imageUrl}
                     data-ai-hint={ctaImage.imageHint}
                     alt="Indian Parliament"
-                    layout="fill"
-                    objectFit="cover"
-                    className="z-0 rounded-2xl"
+                    fill
+                    className="z-0 rounded-2xl object-cover"
                 />
             )}
             <div className="absolute inset-0 bg-primary/80 z-10 rounded-2xl"></div>

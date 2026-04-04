@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image-1",
-      "description": "A stylized image of the India Gate monument in New Delhi.",
-      "imageUrl": "https://picsum.photos/seed/indiagate/1200/800",
-      "imageHint": "india gate"
+      "description": "An official government officer at his desk.",
+      "imageUrl": "https://storage.googleapis.com/studiogpt-interact-2024-05-13.appspot.com/5c9f37c3-a3d5-419b-b9f1-a1e1b2128795.png",
+      "imageHint": "government officer"
     },
     {
       "id": "complaint-map-1",
