@@ -24,7 +24,7 @@ const AshokaChakraLogo = () => (
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="currentColor"
-    className="h-8 w-8 text-primary"
+    className="h-8 w-8 text-sidebar-foreground"
   >
     <path
       d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
@@ -34,7 +34,7 @@ const AshokaChakraLogo = () => (
       d="M12 4a.999.999 0 00-1 1v2.58c-1.3.52-2.37 1.4-3.08 2.59l-2.16-.72a1 1 0 10-.72 1.86l2.16.72C7.37 13.6 8.44 14.48 9.74 15L7.58 15.72a1 1 0 10.72 1.86l2.16-.72c1.09.71 2.37 1.14 3.74 1.14s2.65-.43 3.74-1.14l2.16.72a1 1 0 10.72-1.86L14.26 15c1.3-.52 2.37-1.4 3.08-2.59l2.16.72a1 1 0 10.72-1.86l-2.16-.72C17.27 8.7 16.2 7.82 14.9 7.29V5a1 1 0 00-1-1zm0 2.5c2.49 0 4.5 2.01 4.5 4.5S14.49 15.5 12 15.5 7.5 13.49 7.5 11 9.51 6.5 12 6.5z"
     />
     <path
-      d="M12 10a1 1 0 110 2 1 1 0 010-2zM12 6.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM12 14.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM15.57 7.72a.5.5 0 01.63.31l.5 1.73a.5.5 0 11-.94.27l-.5-1.73a.5.5 0 01.31-.63zM7.22 13.04a.5.5 0 01.63.31l.5 1.73a.5.5 0 01-.94.27l-.5-1.73a.5.5 0 01.31-.63zM8.43 7.72a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM14.36 13.04a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM6.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM15.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM9.64 14.36a.5.5 0 01.63-.31l1.73.5a.5.5 0 01.27.94l-1.73.5a.5.5 0 01-.63-.31.5.5 0 01.31-.63zM13.04 7.22a.5.5 0 01.63-.31l1.73.5a.5.5 0 11-.27.94l-1.73-.5a.5.5 0 01-.31-.63zM8.96 14.36a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31.63zM14.36 8.96a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31.63z"
+      d="M12 10a1 1 0 110 2 1 1 0 010-2zM12 6.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM12 14.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM15.57 7.72a.5.5 0 01.63.31l.5 1.73a.5.5 0 11-.94.27l-.5-1.73a.5.5 0 01.31-.63zM7.22 13.04a.5.5 0 01.63.31l.5 1.73a.5.5 0 01-.94.27l-.5-1.73a.5.5 0 01.31-.63zM8.43 7.72a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM14.36 13.04a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM6.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM15.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM9.64 14.36a.5.5 0 01.63-.31l1.73.5a.5.5 0 01.27.94l-1.73.5a.5.5 0 01-.63-.31.5.5 0 01.31-.63zM13.04 7.22a.5.5 0 01.63-.31l1.73.5a.5.5 0 11-.27.94l-1.73-.5a.5.5 0 01-.31-.63zM8.96 14.36a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31.63zM14.36 8.96a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31-.63z"
       fill="currentColor"
     />
   </svg>
@@ -89,15 +89,15 @@ export default function Home() {
         <TopBanner />
         <LandingNav />
       </header>
-      <main className="flex-1 pt-32">
+      <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full pb-16 md:pb-24 lg:pb-32">
+        <section className="w-full py-16 md:py-24 lg:py-32">
           <div className="container grid gap-10 px-4 md:px-6 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="space-y-6 text-center lg:text-left">
-                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.3)'}}>
+                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.1)'}}>
                     Public Grievance Redressal Portal
                 </h1>
-                <p className="max-w-[700px] text-muted-foreground text-base sm:text-lg md:text-xl mx-auto lg:mx-0" style={{textShadow: '1px 1px 4px rgba(0,0,0,0.2)'}}>
+                <p className="max-w-[700px] text-muted-foreground text-base sm:text-lg md:text-xl mx-auto lg:mx-0" style={{textShadow: '1px 1px 4px rgba(0,0,0,0.1)'}}>
                    A unified platform for citizens to report civic issues, track resolution progress, and engage with government services.
                 </p>
                 <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
@@ -238,47 +238,49 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="bg-secondary border-t">
+      <footer className="bg-sidebar text-sidebar-foreground border-t border-sidebar-border">
         <div className="container py-12 px-4 md:px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div className="md:col-span-1 space-y-4">
                     <Link href="/" className="flex items-center gap-3">
                         <AshokaChakraLogo />
                         <div>
-                            <span className="block font-headline text-xl font-semibold text-foreground leading-tight">JanSevaConnect</span>
-                            <span className="block text-xs font-medium text-muted-foreground leading-tight">सत्यमेव जयते</span>
+                            <span className="block font-headline text-xl font-semibold text-sidebar-foreground leading-tight">JanSevaConnect</span>
+                            <span className="block text-xs font-medium text-sidebar-foreground/80 leading-tight">सत्यमेव जयते</span>
                         </div>
                     </Link>
-                    <p className="text-sm text-muted-foreground">A public service by the Government of India for transparent and efficient grievance redressal.</p>
+                    <p className="text-sm text-sidebar-foreground/80">A public service by the Government of India for transparent and efficient grievance redressal.</p>
                      <div className="flex space-x-4">
-                        <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5" /></Link>
-                        <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5" /></Link>
-                        <Link href="#" className="text-muted-foreground hover:text-primary"><Linkedin className="h-5 w-5" /></Link>
+                        <Link href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground"><Twitter className="h-5 w-5" /></Link>
+                        <Link href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground"><Facebook className="h-5 w-5" /></Link>
+                        <Link href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground"><Linkedin className="h-5 w-5" /></Link>
                     </div>
                 </div>
                 <div className="md:col-start-3">
-                    <h4 className="font-semibold mb-4 text-foreground">Quick Links</h4>
+                    <h4 className="font-semibold mb-4 text-sidebar-foreground">Quick Links</h4>
                     <nav className="flex flex-col space-y-2">
-                        <Link href="#features" className="text-sm text-muted-foreground hover:text-primary hover:underline">Portal Features</Link>
-                        <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-primary hover:underline">Procedure</Link>
-                        <Link href="/register/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Lodge a Grievance</Link>
-                        <Link href="/dashboard/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Citizen Dashboard</Link>
+                        <Link href="#features" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Portal Features</Link>
+                        <Link href="#how-it-works" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Procedure</Link>
+                        <Link href="/register/citizen" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Lodge a Grievance</Link>
+                        <Link href="/dashboard/citizen" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Citizen Dashboard</Link>
                     </nav>
                 </div>
                 <div>
-                    <h4 className="font-semibold mb-4 text-foreground">Legal</h4>
+                    <h4 className="font-semibold mb-4 text-sidebar-foreground">Legal</h4>
                     <nav className="flex flex-col space-y-2">
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Terms of Service</Link>
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Privacy Policy</Link>
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Contact Directory</Link>
+                        <Link href="#" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Terms of Service</Link>
+                        <Link href="#" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Privacy Policy</Link>
+                        <Link href="#" className="text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:underline">Contact Directory</Link>
                     </nav>
                 </div>
             </div>
-            <div className="mt-8 pt-8 border-t border-border">
-                <p className="text-center text-sm text-muted-foreground">&copy; 2024 Government of India. All rights reserved.</p>
+            <div className="mt-8 pt-8 border-t border-sidebar-border">
+                <p className="text-center text-sm text-sidebar-foreground/70">&copy; 2024 Government of India. All rights reserved.</p>
             </div>
         </div>
       </footer>
     </div>
   );
 }
+
+    
