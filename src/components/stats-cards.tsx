@@ -22,7 +22,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
   ];
 
   if (stats.escalated !== undefined) {
-    statItems.push({ title: 'Escalated', value: stats.escalated, icon: Send, color: 'text-amber-500' });
+    statItems.push({ title: 'Escalated', value: stats.escalated, icon: Send, color: 'text-escalated' });
   }
 
   return (

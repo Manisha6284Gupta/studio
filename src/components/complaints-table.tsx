@@ -237,10 +237,10 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
           </TableHeader>
           <TableBody>
             {sortedComplaints.length > 0 ? sortedComplaints.map((complaint) => (
-              <TableRow key={complaint.applicationNumber} className={complaint.isEscalated ? "bg-amber-50" : ""}>
+              <TableRow key={complaint.applicationNumber} className={complaint.isEscalated ? "bg-escalated/10" : ""}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    {complaint.isEscalated && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                    {complaint.isEscalated && <AlertTriangle className="h-4 w-4 text-escalated" />}
                     {complaint.applicationNumber}
                   </div>
                 </TableCell>

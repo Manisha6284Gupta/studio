@@ -59,6 +59,10 @@ export default {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
         },
+        escalated: {
+          DEFAULT: 'hsl(var(--escalated))',
+          foreground: 'hsl(var(--escalated-foreground))',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
