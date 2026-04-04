@@ -101,32 +101,54 @@ export function LandingNav() {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleLinkClick(e, link.href)}
-                className="text-sm font-medium text-foreground underline-offset-4 hover:underline cursor-pointer"
+                className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
             >
                 {link.label}
             </a>
         ))}
        
         {isClient ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                Login <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
-                Citizen
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/login/organization')}>
-                Organization
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Login <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push('/login/citizen')}>
+                  Citizen Login
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/login/organization')}>
+                  Organization Login
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  Register <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push('/register/citizen')}>
+                  Citizen Registration
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/register/staff')}>
+                  Staff Registration
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ) : (
-          <Button disabled>
-            Login <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" disabled>
+              Login <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+            <Button disabled>
+              Register <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         )}
       </nav>
 
@@ -152,11 +174,19 @@ export function LandingNav() {
                           </button>
                       ))}
                       <div className="mt-6 flex flex-col gap-4 px-4">
-                           <Button onClick={() => handleMobileLinkClick('/login/citizen')} className="w-full">
+                          <h3 className="text-sm font-semibold text-muted-foreground text-center">LOGIN</h3>
+                           <Button onClick={() => handleMobileLinkClick('/login/citizen')} className="w-full" variant="outline">
                               Citizen Login
                           </Button>
                           <Button onClick={() => handleMobileLinkClick('/login/organization')} variant="outline" className="w-full">
                               Organization Login
+                          </Button>
+                          <h3 className="text-sm font-semibold text-muted-foreground text-center pt-4">REGISTER</h3>
+                           <Button onClick={() => handleMobileLinkClick('/register/citizen')} className="w-full">
+                              Citizen Registration
+                          </Button>
+                          <Button onClick={() => handleMobileLinkClick('/register/staff')} className="w-full">
+                              Staff Registration
                           </Button>
                       </div>
                   </div>
