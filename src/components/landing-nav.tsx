@@ -86,7 +86,7 @@ export function LandingNav() {
         <AshokaChakraLogo />
         <div>
             <span className="block font-headline text-2xl font-semibold text-foreground leading-tight">
-              CivicConnect
+              JanSevaConnect
             </span>
             <span className="block text-sm font-medium text-muted-foreground leading-tight">
               सत्यमेव जयते
@@ -144,7 +144,7 @@ export function LandingNav() {
                   <div className="flex flex-col gap-6 pt-16">
                        <Link href="/" className="flex items-center justify-center mb-4" onClick={() => setMobileMenuOpen(false)}>
                           <AshokaChakraLogo />
-                          <span className="ml-2 font-headline text-2xl font-semibold text-foreground">CivicConnect</span>
+                          <span className="ml-2 font-headline text-2xl font-semibold text-foreground">JanSevaConnect</span>
                       </Link>
                       {navLinks.map((link) => (
                           <button key={link.href} onClick={() => handleMobileLinkClick(link.href)} className="text-lg font-medium text-center">

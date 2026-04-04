@@ -105,7 +105,7 @@ export default function StaffRegisterPage() {
 
       toast({
         title: "Registration Successful!",
-        description: "Welcome to CivicConnect. Please log in.",
+        description: "Welcome to JanSevaConnect. Please log in.",
       });
       router.push('/login/organization');
 
@@ -153,7 +153,7 @@ export default function StaffRegisterPage() {
       <div className="absolute top-8 left-8">
         <Link href="/" className="flex items-center gap-2 text-foreground">
           <Shield className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl font-semibold">CivicConnect</span>
+          <span className="font-headline text-xl font-semibold">JanSevaConnect</span>
         </Link>
       </div>
       <Card className="w-full max-w-lg shadow-2xl">

@@ -86,7 +86,7 @@ export default function CitizenRegisterPage() {
           .then(() => {
             toast({
               title: "Registration Successful!",
-              description: "Welcome to CivicConnect. You are now being redirected.",
+              description: "Welcome to JanSevaConnect. You are now being redirected.",
             });
             router.push('/dashboard/citizen');
           })
@@ -124,14 +124,14 @@ export default function CitizenRegisterPage() {
       <div className="absolute top-8 left-8">
         <Link href="/" className="flex items-center gap-2 text-foreground">
           <Shield className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl font-semibold">CivicConnect</span>
+          <span className="font-headline text-xl font-semibold">JanSevaConnect</span>
         </Link>
       </div>
       <Card className="w-full max-w-lg shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="font-headline text-2xl">Create Your Account</CardTitle>
           <CardDescription>
-            Join CivicConnect to help improve your community.
+            Join JanSevaConnect to help improve your community.
           </CardDescription>
         </CardHeader>
         <Form {...form}>

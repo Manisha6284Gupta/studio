@@ -8,8 +8,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'CivicConnect',
-  description: 'Connecting citizens for a better tomorrow.',
+  title: 'JanSevaConnect',
+  description: 'An integrated platform for public service delivery and grievance redressal.',
   icons: {
     icon: [
       { url: '/favicon.ico', type: 'image/x-icon', sizes: '16x16' },
@@ -241,7 +241,7 @@ export default function Home() {
                     <Link href="/" className="flex items-center gap-3">
                         <AshokaChakraLogo />
                         <div>
-                            <span className="block font-headline text-xl font-semibold text-foreground leading-tight">CivicConnect</span>
+                            <span className="block font-headline text-xl font-semibold text-foreground leading-tight">JanSevaConnect</span>
                             <span className="block text-xs font-medium text-muted-foreground leading-tight">सत्यमेव जयते</span>
                         </div>
                     </Link>

@@ -1,4 +1,4 @@
-# Deploying Your CivicConnect Application
+# Deploying Your JanSevaConnect Application
 
 This guide will walk you through deploying your Next.js application to **Firebase App Hosting**. This is a more robust, multi-step process to ensure all permissions and secrets are set up correctly.
 
@@ -95,4 +95,4 @@ After deploying, you can point your own domain name (e.g., `www.your-app.com`) t
 5.  **Wait for Propagation:**
     DNS changes can take some time. Once complete, Firebase will automatically provision a free SSL certificate for your domain.
 
-That's it! Your CivicConnect application is now live.
+That's it! Your JanSevaConnect application is now live.

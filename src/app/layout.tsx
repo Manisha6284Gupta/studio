@@ -11,8 +11,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'CivicConnect',
-  description: 'Connecting citizens for a better tomorrow.',
+  title: 'JanSevaConnect',
+  description: 'An integrated platform for public service delivery and grievance redressal.',
 };
 
 export default function RootLayout({

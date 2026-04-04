@@ -133,7 +133,7 @@ export function DashboardSidebar() {
             <AshokaChakraLogo />
             <div className="group-data-[collapsible=icon]:hidden">
                 <h1 className="block font-headline text-2xl font-bold text-primary-foreground leading-tight">
-                    CivicConnect
+                    JanSevaConnect
                 </h1>
                 <p className="block text-sm font-medium text-sidebar-foreground/80 leading-tight">
                     सत्यमेव जयते
