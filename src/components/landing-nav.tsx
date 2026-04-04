@@ -82,11 +82,16 @@ export function LandingNav() {
         "fixed top-0 left-0 right-0 z-50 px-4 lg:px-6 h-20 flex items-center transition-all duration-300",
         scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-background/80 backdrop-blur-sm border-b border-transparent"
     )}>
-      <Link href="/" className="flex items-center justify-center">
+      <Link href="/" className="flex items-center justify-start gap-3">
         <AshokaChakraLogo />
-        <span className="ml-2 font-headline text-2xl font-semibold text-foreground">
-          CivicConnect
-        </span>
+        <div>
+            <span className="block font-headline text-2xl font-semibold text-foreground leading-tight">
+              CivicConnect
+            </span>
+            <span className="block text-sm font-medium text-muted-foreground leading-tight">
+              सत्यमेव जयते
+            </span>
+        </div>
       </Link>
       
       {/* Desktop Nav */}

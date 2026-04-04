@@ -129,11 +129,16 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-20 justify-center">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-3">
             <AshokaChakraLogo />
-            <h1 className="font-headline text-2xl font-bold text-primary-foreground group-data-[collapsible=icon]:hidden">
-                CivicConnect
-            </h1>
+            <div className="group-data-[collapsible=icon]:hidden">
+                <h1 className="block font-headline text-2xl font-bold text-primary-foreground leading-tight">
+                    CivicConnect
+                </h1>
+                <p className="block text-sm font-medium text-sidebar-foreground/80 leading-tight">
+                    सत्यमेव जयते
+                </p>
+            </div>
         </Link>
       </SidebarHeader>
 

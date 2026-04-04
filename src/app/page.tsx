@@ -89,14 +89,14 @@ export default function Home() {
         {/* Hero Section */}
         <section className="w-full pt-32 pb-16 md:pt-48 md:pb-24 lg:pt-56 lg:pb-32">
           <div className="container grid gap-10 px-4 md:px-6 lg:grid-cols-2 lg:gap-16 items-center">
-            <div className="space-y-6">
-                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
+            <div className="space-y-6 text-center lg:text-left">
+                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.3)'}}>
                     Public Grievance Redressal Portal
                 </h1>
-                <p className="max-w-[700px] text-muted-foreground text-base sm:text-lg md:text-xl">
+                <p className="max-w-[700px] text-muted-foreground text-base sm:text-lg md:text-xl mx-auto lg:mx-0" style={{textShadow: '1px 1px 4px rgba(0,0,0,0.2)'}}>
                    A unified platform for citizens to report civic issues, track resolution progress, and engage with government services.
                 </p>
-                <div className="flex flex-col gap-4 min-[400px]:flex-row">
+                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
                   <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Link href="/register/citizen">
                       Lodge a Complaint
@@ -238,9 +238,12 @@ export default function Home() {
         <div className="container py-12 px-4 md:px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div className="md:col-span-1 space-y-4">
-                    <Link href="/" className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-3">
                         <AshokaChakraLogo />
-                        <span className="font-headline text-xl font-semibold text-foreground">CivicConnect</span>
+                        <div>
+                            <span className="block font-headline text-xl font-semibold text-foreground leading-tight">CivicConnect</span>
+                            <span className="block text-xs font-medium text-muted-foreground leading-tight">सत्यमेव जयते</span>
+                        </div>
                     </Link>
                     <p className="text-sm text-muted-foreground">A public service by the Government of India for transparent and efficient grievance redressal.</p>
                      <div className="flex space-x-4">
