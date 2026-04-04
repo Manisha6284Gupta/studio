@@ -35,10 +35,10 @@ import { useFirestore, errorEmitter, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDoc, doc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
-
+import { Textarea } from "./ui/textarea";
 
 interface ComplaintsTableProps {
   complaints: Complaint[];
@@ -64,6 +64,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
 
   const [complaintToDelete, setComplaintToDelete] = React.useState<Complaint | null>(null);
   const [complaintToEscalate, setComplaintToEscalate] = React.useState<Complaint | null>(null);
+  const [escalationComment, setEscalationComment] = React.useState<string>("");
   const [complaintToReassign, setComplaintToReassign] = React.useState<Complaint | null>(null);
   const [reassignDepartment, setReassignDepartment] = React.useState<string>("");
 
@@ -150,12 +151,21 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
 
   const handleSendBack = async () => {
     if (!complaintToEscalate || !user) return;
+    if (!escalationComment.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Comment Required",
+            description: "Please provide a reason for sending the complaint back.",
+        });
+        return;
+    }
+
     setIsUpdating(true);
     const docRef = doc(firestore, 'complaints', complaintToEscalate._id);
     const historyEntry = {
         action: 'Sent Back to Control Room',
         status: complaintToEscalate.status,
-        comment: 'Department staff marked as incorrectly assigned.',
+        comment: escalationComment,
         date: new Date(),
         updatedBy: user.uid,
     };
@@ -163,7 +173,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
     try {
         await updateDoc(docRef, {
             isEscalated: true,
-            escalationReason: "Incorrectly assigned",
+            escalationReason: escalationComment,
             escalationDate: serverTimestamp(),
             history: arrayUnion(historyEntry),
             updatedAt: serverTimestamp(),
@@ -175,6 +185,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
     } finally {
         setIsUpdating(false);
         setComplaintToEscalate(null);
+        setEscalationComment("");
     }
   }
 
@@ -308,24 +319,38 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
         </AlertDialogContent>
       </AlertDialog>
 
-       {/* Send Back Confirmation Dialog */}
-       <AlertDialog open={!!complaintToEscalate} onOpenChange={(open) => !open && setComplaintToEscalate(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Send Complaint Back?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Are you sure this complaint was assigned incorrectly? This will return it to the Control Room for reassignment.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSendBack} disabled={isUpdating}>
+       {/* Send Back Dialog */}
+       <Dialog open={!!complaintToEscalate} onOpenChange={(open) => {
+            if (!open) {
+              setComplaintToEscalate(null);
+              setEscalationComment("");
+            }
+          }}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Send Complaint Back to Control Room</DialogTitle>
+                <DialogDescription>
+                    Provide a reason for returning this complaint. This comment will be visible to the Control Room.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+                <Label htmlFor="escalation-comment">Comment (Required)</Label>
+                <Textarea
+                    id="escalation-comment"
+                    placeholder="e.g., This complaint belongs to the Water Department, not Utilities."
+                    value={escalationComment}
+                    onChange={(e) => setEscalationComment(e.target.value)}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => { setComplaintToEscalate(null); setEscalationComment(""); }}>Cancel</Button>
+                <Button onClick={handleSendBack} disabled={isUpdating || !escalationComment.trim()}>
                     {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    Yes, Send Back
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                    Send Back
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reassign Dialog */}
       <Dialog open={!!complaintToReassign} onOpenChange={(open) => !open && setComplaintToReassign(null)}>
