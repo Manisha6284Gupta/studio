@@ -127,6 +127,8 @@ export function ComplaintForm({ complaint, initialLocation }: ComplaintFormProps
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [videoDevices, setVideoDevices] = useState<InputDeviceInfo[]>([]);
+  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -187,14 +189,38 @@ export function ComplaintForm({ complaint, initialLocation }: ComplaintFormProps
       return;
     }
 
-    const getCameraPermission = async () => {
+    const startCameraStream = async () => {
       try {
-        const constraints = cameraMode === 'video' ? { video: true, audio: true } : { video: true };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setHasCameraPermission(true);
+        // Enumerate devices to find all video inputs
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(device => device.kind === 'videoinput');
+        setVideoDevices(videoInputs);
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+        // If there are video inputs, select one and get the stream
+        if (videoInputs.length > 0) {
+          const currentDeviceId = videoInputs[selectedDeviceIndex % videoInputs.length].deviceId;
+          const constraints = {
+            video: { deviceId: { exact: currentDeviceId } },
+            ...(cameraMode === 'video' && { audio: true })
+          };
+          
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setHasCameraPermission(true);
+
+          if (videoRef.current) {
+            // Stop any existing stream before assigning the new one
+            if (videoRef.current.srcObject) {
+              (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+            }
+            videoRef.current.srcObject = stream;
+          }
+        } else {
+          // Fallback if no specific video inputs are found (should be rare)
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: cameraMode === 'video' });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
@@ -207,15 +233,16 @@ export function ComplaintForm({ complaint, initialLocation }: ComplaintFormProps
       }
     };
 
-    getCameraPermission();
+    startCameraStream();
     
+    // Cleanup function to stop the stream
     return () => {
-        if (videoRef.current?.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
     }
-}, [isCameraOpen, cameraMode, toast]);
+  }, [isCameraOpen, cameraMode, toast, selectedDeviceIndex]);
 
 
   const handleMicClick = () => {
@@ -1104,12 +1131,26 @@ async function onSubmit(data: ComplaintFormValues) {
                     )}
                     autoPlay
                     playsInline
+                    muted
                 />
 
                 {isRecording && (
                     <div className="absolute top-2 left-2 flex items-center gap-2 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
                         <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>REC
                     </div>
+                )}
+                
+                {videoDevices.length > 1 && hasCameraPermission && !isRecording && !recordedVideoUrl && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="absolute bottom-2 right-2 h-10 w-10 bg-black/50 hover:bg-black/70 text-white border-white/50"
+                        onClick={() => setSelectedDeviceIndex(prev => prev + 1)}
+                    >
+                        <RefreshCcw className="h-5 w-5" />
+                        <span className="sr-only">Switch Camera</span>
+                    </Button>
                 )}
 
                 {recordedVideoUrl && (
