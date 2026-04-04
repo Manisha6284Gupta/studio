@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,27 +11,46 @@ import { DepartmentComplaintsFilters } from "@/components/department-complaints-
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatsCards } from "@/components/stats-cards";
+import { DepartmentStatusChart } from "@/components/department-status-chart";
 
 const PageSkeleton = () => (
-    <div className="-mt-4 sm:-mt-6 lg:-mt-8">
-        <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-            <Card className="rounded-none border-x-0 border-t-0">
-                <CardContent className="p-0">
-                    <Skeleton className="w-full aspect-[18/9]" />
-                </CardContent>
-            </Card>
+    <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
         </div>
-        <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-             <div className="flex flex-col gap-4 border-y bg-card p-4 sm:flex-row sm:flex-wrap">
-                 <Skeleton className="h-10 flex-1 min-w-[200px]" />
-                 <Skeleton className="h-10 w-full sm:w-[180px]" />
-                 <Skeleton className="h-10 w-full sm:w-auto" />
-                 <Skeleton className="h-10 w-full sm:w-auto" />
-             </div>
-        </div>
-        <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-            <div className="relative h-[600px] overflow-auto border-y">
-                <Skeleton className="h-full w-full" />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="xl:col-span-2 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-[350px]" />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-48" />
+                    </CardHeader>
+                    <CardContent>
+                         <Skeleton className="h-16 mb-4" />
+                        <Skeleton className="h-[400px]" />
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-32" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="aspect-video" />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </div>
@@ -76,6 +94,16 @@ export default function DepartmentDashboardPage() {
         setFilteredComplaints(departmentComplaints);
     }, [departmentComplaints]);
     
+     const stats = React.useMemo(() => {
+        if (!departmentComplaints || departmentComplaints.length === 0) return { total: 0, resolved: 0, pending: 0, overdue: 0 };
+        return {
+            total: departmentComplaints.length,
+            resolved: departmentComplaints.filter(c => c.status === 'Resolved').length,
+            pending: departmentComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length,
+            overdue: departmentComplaints.filter(c => c.status === 'Overdue').length,
+        }
+    }, [departmentComplaints]);
+
     const handleFilterChange = React.useCallback((filters: { applicationNumber?: string; status?: ComplaintStatus | 'all'; date?: Date }) => {
         let complaints = [...departmentComplaints];
 
@@ -96,13 +124,13 @@ export default function DepartmentDashboardPage() {
     
     const locations = React.useMemo(() => filteredComplaints.map(c => c.location).filter((l): l is ComplaintLocation => !!l), [filteredComplaints]);
 
-    const isLoading = isUserLoading || isStaffLoading;
+    const isLoading = isUserLoading || isStaffLoading || isComplaintsLoading;
 
-    if (isLoading || !user) {
+    if (isLoading && !staffProfile) {
         return <PageSkeleton />;
     }
 
-    if (!staffProfile) {
+    if (!user || !staffProfile?.departmentId) {
         return (
             <div className="flex h-full items-center justify-center">
                 <Card className="w-full max-w-md text-center">
@@ -117,28 +145,43 @@ export default function DepartmentDashboardPage() {
             </div>
         );
     }
-    
-    if (isComplaintsLoading) {
-        return <PageSkeleton />;
-    }
-
 
     return (
-        <div className="-mt-4 sm:-mt-6 lg:-mt-8">
-             <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-                <Card className="rounded-none border-x-0 border-t-0">
-                    <CardContent className="aspect-[18/9] p-0">
-                        <ComplaintsMap locations={locations} />
-                    </CardContent>
-                </Card>
-            </div>
-            
-            <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-                <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
-            </div>
-
-            <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-                <ComplaintsTable complaints={filteredComplaints} view="department" />
+       <div className="space-y-8">
+            <StatsCards stats={stats} />
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="xl:col-span-2 space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Department Performance</CardTitle>
+                             <CardDescription>Breakdown of complaint statuses assigned to your department.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <DepartmentStatusChart complaints={departmentComplaints} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Assigned Complaints</CardTitle>
+                             <CardDescription>All complaints currently assigned to the {staffProfile.departmentId} department.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <DepartmentComplaintsFilters onFilterChange={handleFilterChange} />
+                            <ComplaintsTable complaints={filteredComplaints} view="department" />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Complaint Locations</CardTitle>
+                            <CardDescription>Map of filtered complaint locations.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ComplaintsMap locations={locations} />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     )

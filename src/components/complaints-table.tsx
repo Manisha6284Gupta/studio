@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Complaint } from "@/lib/types";
+import type { Complaint, ComplaintStatus } from "@/lib/types";
 import { ComplaintStatusBadge } from "./complaint-status-badge";
 import {
   DropdownMenu,
@@ -66,6 +66,37 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
   const [complaintToEscalate, setComplaintToEscalate] = React.useState<Complaint | null>(null);
   const [complaintToReassign, setComplaintToReassign] = React.useState<Complaint | null>(null);
   const [reassignDepartment, setReassignDepartment] = React.useState<string>("");
+
+  const sortedComplaints = React.useMemo(() => {
+    if (view === 'citizen') {
+        // For citizens, sort by most recent first
+        return [...complaints].sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+            return dateB.getTime() - dateA.getTime();
+        });
+    }
+
+    // For department and control room, use priority sorting
+    const statusOrder: Record<ComplaintStatus, number> = {
+        'Overdue': 1,
+        'Pending': 2,
+        'In Progress': 3,
+        'Resolved': 4,
+    };
+
+    return [...complaints].sort((a, b) => {
+        const statusA = statusOrder[a.status] || 99;
+        const statusB = statusOrder[b.status] || 99;
+        if (statusA !== statusB) {
+            return statusA - statusB;
+        }
+        // Secondary sort: newer first for items with the same status
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+    });
+  }, [complaints, view]);
 
   const handleViewDetails = (complaintId: string) => {
     let path = '';
@@ -181,7 +212,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
 
   return (
     <>
-      <div className="relative h-[600px] overflow-auto border-y">
+      <div className="relative h-[600px] overflow-auto border-t">
         <Table>
           <TableHeader>
             <TableRow>
@@ -194,7 +225,7 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
             </TableRow>
           </TableHeader>
           <TableBody>
-            {complaints.map((complaint) => (
+            {sortedComplaints.length > 0 ? sortedComplaints.map((complaint) => (
               <TableRow key={complaint.applicationNumber} className={complaint.isEscalated ? "bg-amber-50" : ""}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
@@ -249,7 +280,13 @@ export function ComplaintsTable({ complaints, view = 'citizen' }: ComplaintsTabl
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        No complaints found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
