@@ -2,27 +2,48 @@ import { LandingNav } from '@/components/landing-nav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, Shield, FileText, Users, Smile, Twitter, Facebook, Linkedin } from 'lucide-react';
+import { ArrowRight, FileText, Users, CheckCircle, Twitter, Facebook, Linkedin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+
+const AshokaChakraLogo = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="h-8 w-8 text-primary"
+  >
+    <path
+      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+      fill="none"
+    />
+    <path
+      d="M12 4a.999.999 0 00-1 1v2.58c-1.3.52-2.37 1.4-3.08 2.59l-2.16-.72a1 1 0 10-.72 1.86l2.16.72C7.37 13.6 8.44 14.48 9.74 15L7.58 15.72a1 1 0 10.72 1.86l2.16-.72c1.09.71 2.37 1.14 3.74 1.14s2.65-.43 3.74-1.14l2.16.72a1 1 0 10.72-1.86L14.26 15c1.3-.52 2.37-1.4 3.08-2.59l2.16.72a1 1 0 10.72-1.86l-2.16-.72C17.27 8.7 16.2 7.82 14.9 7.29V5a1 1 0 00-1-1zm0 2.5c2.49 0 4.5 2.01 4.5 4.5S14.49 15.5 12 15.5 7.5 13.49 7.5 11 9.51 6.5 12 6.5z"
+    />
+    <path
+      d="M12 10a1 1 0 110 2 1 1 0 010-2zM12 6.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM12 14.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM15.57 7.72a.5.5 0 01.63.31l.5 1.73a.5.5 0 11-.94.27l-.5-1.73a.5.5 0 01.31-.63zM7.22 13.04a.5.5 0 01.63.31l.5 1.73a.5.5 0 01-.94.27l-.5-1.73a.5.5 0 01.31-.63zM8.43 7.72a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM14.36 13.04a.5.5 0 01.31.63l-.5 1.73a.5.5 0 11-.94-.27l.5-1.73a.5.5 0 01.63-.31zM6.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM15.5 11a.5.5 0 01.5.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5v-1zM9.64 14.36a.5.5 0 01.63-.31l1.73.5a.5.5 0 01.27.94l-1.73.5a.5.5 0 01-.63-.31.5.5 0 01.31-.63zM13.04 7.22a.5.5 0 01.63-.31l1.73.5a.5.5 0 11-.27.94l-1.73-.5a.5.5 0 01-.31-.63zM8.96 14.36a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31.63zM14.36 8.96a.5.5 0 01-.63.31l-1.73-.5a.5.5 0 11.27-.94l1.73.5a.5.5 0 01.31.63z"
+      fill="currentColor"
+    />
+  </svg>
+);
 
 const features = [
   {
     icon: <FileText className="h-10 w-10 text-primary" />,
-    title: 'Effortless Submission',
-    description: 'Report issues quickly with our easy-to-use form, featuring voice-to-text and image uploads.',
+    title: 'Streamlined Complaint Submission',
+    description: 'Our intuitive portal simplifies the process of lodging service requests and grievances, with options for media uploads.',
     imageId: 'feature-1'
   },
   {
     icon: <Users className="h-10 w-10 text-primary" />,
-    title: 'Direct to Department',
-    description: 'Our AI automatically directs your complaint to the right department, ensuring a faster response.',
+    title: 'Automated Department Routing',
+    description: 'Advanced AI ensures your complaint is automatically categorized and assigned to the correct government department.',
     imageId: 'feature-2'
   },
   {
-    icon: <Smile className="h-10 w-10 text-primary" />,
-    title: 'Track to Resolution',
-    description: 'Stay updated on your complaint status from submission to resolution through your personal dashboard.',
+    icon: <CheckCircle className="h-10 w-10 text-primary" />,
+    title: 'Transparent Resolution Tracking',
+    description: 'Monitor the status of your complaint in real-time from submission to final resolution via your personal dashboard.',
     imageId: 'feature-3'
   },
 ];
@@ -30,18 +51,18 @@ const features = [
 const howItWorks = [
     {
         step: 1,
-        title: "Submit Your Complaint",
-        description: "Use our simple web form to detail the issue. You can upload photos, add a description, and pinpoint the location on a map.",
+        title: "Lodge Your Grievance",
+        description: "Utilize the portal to submit a detailed account of the issue, including location data and supporting media files.",
     },
     {
         step: 2,
-        title: "AI-Powered Routing",
-        description: "Our intelligent system analyzes and categorizes your complaint, instantly assigning it to the correct city department for action.",
+        title: "Intelligent Case Assignment",
+        description: "Our system analyzes and routes your case to the responsible department, ensuring efficient and accurate processing.",
     },
     {
         step: 3,
-        title: "Track and Get Notified",
-        description: "Follow the progress of your complaint in real-time on your dashboard and receive notifications as its status changes, right up to resolution.",
+        title: "Track to Resolution",
+        description: "Receive status updates through your dashboard as your case progresses, ensuring full transparency until the matter is resolved.",
     }
 ]
 
@@ -59,7 +80,7 @@ export default function Home() {
                  <Image
                     src={heroImage.imageUrl}
                     data-ai-hint={heroImage.imageHint}
-                    alt="City Background"
+                    alt="Official Government of India Portal Background"
                     layout="fill"
                     objectFit="cover"
                     className="z-0"
@@ -68,21 +89,21 @@ export default function Home() {
             <div className="absolute inset-0 bg-black/50 z-10"></div>
             <div className="z-20 container px-4 md:px-6 space-y-6">
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
-                    Your Voice, Your City, Transformed.
+                    Public Grievance Redressal Portal
                 </h1>
                 <p className="max-w-[700px] mx-auto text-base sm:text-lg md:text-xl text-gray-200">
-                    CivicConnect is the modern platform for reporting civic issues, tracking their resolution, and fostering a stronger, more connected community.
+                   A unified platform for citizens to report civic issues, track resolution progress, and engage with government services.
                 </p>
                 <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center">
                   <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Link href="/register/citizen">
-                      Report an Issue
+                      Lodge a Complaint
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </Button>
                    <Button asChild size="lg" variant="secondary">
                     <Link href="/dashboard/citizen/complaints">
-                      Track My Complaints
+                      Track Complaint Status
                     </Link>
                   </Button>
                 </div>
@@ -93,12 +114,12 @@ export default function Home() {
         <section id="features" className="w-full py-16 md:py-24 lg:py-32 bg-secondary">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm text-primary font-semibold">Key Features</div>
+              <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm text-primary font-semibold">Portal Features</div>
               <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-5xl">
-                A Better Way to Engage with Your City
+                Efficient, Transparent, and Accountable Governance
               </h2>
               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                Our platform is designed to make civic engagement seamless, transparent, and effective for everyone.
+                Our platform is engineered to enhance civic engagement and ensure the timely redressal of public grievances.
               </p>
             </div>
             <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-none">
@@ -136,12 +157,12 @@ export default function Home() {
         <section id="how-it-works" className="w-full py-16 md:py-24 lg:py-32">
             <div className="container px-4 md:px-6">
                  <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm text-primary font-semibold">Simple Process</div>
+                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm text-primary font-semibold">Standard Operating Procedure</div>
                     <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-5xl">
-                        How It Works
+                        Complaint Redressal Mechanism
                     </h2>
                     <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                       Resolving city issues in three simple steps.
+                       Follow a simple three-step process for grievance resolution.
                     </p>
                 </div>
                 <div className="relative grid gap-10 lg:grid-cols-3">
@@ -164,7 +185,6 @@ export default function Home() {
             </div>
         </section>
 
-
         {/* CTA Section */}
         <section className="w-full py-16 md:py-24 lg:py-32">
           <div className="container relative">
@@ -172,7 +192,7 @@ export default function Home() {
                 <Image
                     src={ctaImage.imageUrl}
                     data-ai-hint={ctaImage.imageHint}
-                    alt="City Sunset"
+                    alt="Indian Parliament"
                     layout="fill"
                     objectFit="cover"
                     className="z-0 rounded-2xl"
@@ -182,16 +202,16 @@ export default function Home() {
             <div className="relative z-20 grid items-center justify-center gap-4 px-4 text-center text-primary-foreground py-20">
                 <div className="space-y-3">
                 <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                    Ready to Make a Difference?
+                    Participate in Nation-Building
                 </h2>
                 <p className="mx-auto max-w-[600px] text-base md:text-xl/relaxed">
-                    Join thousands of other citizens. Create an account and submit your first report today to help build a better tomorrow.
+                    Register as a citizen and contribute to a more responsive and effective governance model by reporting issues.
                 </p>
                 </div>
                 <div className="mx-auto w-full max-w-sm space-y-2">
                 <Button asChild size="lg" className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90">
                     <Link href="/register/citizen">
-                        Get Started Now
+                        Register to File a Grievance
                         <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                     </Button>
@@ -205,10 +225,10 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div className="md:col-span-1 space-y-4">
                     <Link href="/" className="flex items-center gap-2">
-                        <Shield className="h-7 w-7 text-primary" />
+                        <AshokaChakraLogo />
                         <span className="font-headline text-xl font-semibold text-foreground">CivicConnect</span>
                     </Link>
-                    <p className="text-sm text-muted-foreground">Connecting citizens for a better tomorrow. Report issues, track progress, and build a stronger community.</p>
+                    <p className="text-sm text-muted-foreground">A public service by the Government of India for transparent and efficient grievance redressal.</p>
                      <div className="flex space-x-4">
                         <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5" /></Link>
                         <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5" /></Link>
@@ -218,10 +238,10 @@ export default function Home() {
                 <div className="md:col-start-3">
                     <h4 className="font-semibold mb-4 text-foreground">Quick Links</h4>
                     <nav className="flex flex-col space-y-2">
-                        <Link href="#features" className="text-sm text-muted-foreground hover:text-primary hover:underline">Features</Link>
-                        <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-primary hover:underline">How It Works</Link>
-                        <Link href="/register/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Report an Issue</Link>
-                        <Link href="/dashboard/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">My Dashboard</Link>
+                        <Link href="#features" className="text-sm text-muted-foreground hover:text-primary hover:underline">Portal Features</Link>
+                        <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-primary hover:underline">Procedure</Link>
+                        <Link href="/register/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Lodge a Grievance</Link>
+                        <Link href="/dashboard/citizen" className="text-sm text-muted-foreground hover:text-primary hover:underline">Citizen Dashboard</Link>
                     </nav>
                 </div>
                 <div>
@@ -229,12 +249,12 @@ export default function Home() {
                     <nav className="flex flex-col space-y-2">
                         <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Terms of Service</Link>
                         <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Privacy Policy</Link>
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Contact Us</Link>
+                        <Link href="#" className="text-sm text-muted-foreground hover:text-primary hover:underline">Contact Directory</Link>
                     </nav>
                 </div>
             </div>
             <div className="mt-8 pt-8 border-t border-border">
-                <p className="text-center text-sm text-muted-foreground">&copy; 2024 CivicConnect. All rights reserved.</p>
+                <p className="text-center text-sm text-muted-foreground">&copy; 2024 Government of India. All rights reserved.</p>
             </div>
         </div>
       </footer>

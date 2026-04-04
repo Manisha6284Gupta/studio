@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image-1",
-      "description": "A modern, abstract image representing connection or city life.",
-      "imageUrl": "https://picsum.photos/seed/hero2/1200/800",
-      "imageHint": "modern cityscape"
+      "description": "A stylized image of the India Gate monument in New Delhi.",
+      "imageUrl": "https://picsum.photos/seed/indiagate/1200/800",
+      "imageHint": "india gate"
     },
     {
       "id": "complaint-map-1",
@@ -20,27 +20,27 @@
     },
     {
       "id": "feature-1",
-      "description": "A person using a smartphone to report an issue.",
-      "imageUrl": "https://picsum.photos/seed/feat1/500/500",
-      "imageHint": "smartphone report"
+      "description": "An official government document with a stamp.",
+      "imageUrl": "https://picsum.photos/seed/document/500/500",
+      "imageHint": "official document"
     },
     {
       "id": "feature-2",
-      "description": "A city worker in a helmet looking at a tablet.",
-      "imageUrl": "https://picsum.photos/seed/feat2/500/500",
-      "imageHint": "city worker"
+      "description": "An image of a grand, official government building.",
+      "imageUrl": "https://picsum.photos/seed/govbuilding/500/500",
+      "imageHint": "government building"
     },
     {
       "id": "feature-3",
-      "description": "A checkmark icon over a resolved city issue like a fixed streetlight.",
-      "imageUrl": "https://picsum.photos/seed/feat3/500/500",
-      "imageHint": "issue resolved"
+      "description": "A diverse group of people in a community meeting setting.",
+      "imageUrl": "https://picsum.photos/seed/community/500/500",
+      "imageHint": "community meeting"
     },
     {
       "id": "cta-background",
-      "description": "A beautiful view of a city at sunset.",
-      "imageUrl": "https://picsum.photos/seed/ctabg/1600/900",
-      "imageHint": "city sunset"
+      "description": "A wide shot of the Indian Parliament building.",
+      "imageUrl": "https://picsum.photos/seed/parliament/1600/900",
+      "imageHint": "indian parliament"
     }
   ]
 }
