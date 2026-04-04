@@ -5,6 +5,18 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ArrowRight, FileText, Users, CircleCheckBig, Twitter, Facebook, Linkedin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'CivicConnect',
+  description: 'Connecting citizens for a better tomorrow.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', type: 'image/x-icon', sizes: '16x16' },
+      { url: '/icon.svg', type: 'image/svg+xml', sizes: 'any' },
+    ],
+  },
+};
 
 const AshokaChakraLogo = () => (
   <svg
@@ -75,7 +87,7 @@ export default function Home() {
       <LandingNav />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative w-full h-[85vh] md:h-[70vh] flex items-center justify-center text-center text-white">
+        <section className="relative w-full h-[85vh] md:h-[70vh] flex items-center justify-end text-right text-white">
             {heroImage && (
                  <Image
                     src={heroImage.imageUrl}
@@ -86,14 +98,15 @@ export default function Home() {
                     priority
                 />
             )}
-            <div className="z-20 container px-4 md:px-6 space-y-6">
-                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none [text-shadow:0_3px_6px_rgba(0,0,0,0.7)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-black/60 z-10"></div>
+            <div className="relative z-20 container px-4 md:px-6 space-y-6">
+                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
                     Public Grievance Redressal Portal
                 </h1>
-                <p className="max-w-[700px] mx-auto text-base sm:text-lg md:text-xl text-gray-200 [text-shadow:0_2px_4px_rgba(0,0,0,0.5)]">
+                <p className="max-w-[700px] ml-auto text-base sm:text-lg md:text-xl text-gray-200">
                    A unified platform for citizens to report civic issues, track resolution progress, and engage with government services.
                 </p>
-                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center">
+                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-end">
                   <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Link href="/register/citizen">
                       Lodge a Complaint
