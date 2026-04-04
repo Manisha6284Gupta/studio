@@ -246,7 +246,7 @@ export default function Home() {
                         <AshokaChakraLogo />
                         <div>
                             <span className="block font-headline text-xl font-semibold text-sidebar-foreground leading-tight">JanSevaConnect</span>
-                            <span className="block text-xs font-medium text-sidebar-foreground/80 leading-tight">सत्यमेव जयते</span>
+                            <span className="block text-xs font-bold text-sidebar-foreground/80 leading-tight">सत्यमेव जयते</span>
                         </div>
                     </Link>
                     <p className="text-sm text-sidebar-foreground/80">A public service by the Government of India for transparent and efficient grievance redressal.</p>
@@ -282,5 +282,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
