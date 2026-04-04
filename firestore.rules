@@ -207,10 +207,8 @@ service cloud.firestore {
       // QAP-compliant list rules:
       // Citizens can list their own complaints.
       // Control Room can list all complaints.
-      // Department staff can list complaints filtered by their department.
-      // NOTE: The `getStaffData()` call is invalid in `list` rules. 
-      // The frontend query MUST enforce the department filter, and the `get` rule above provides the actual document-level security.
-      allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && request.query.where.initialDepartmentId != null);
+      // Department staff can list complaints filtered by their department. This uses a `get` which is okay for targeted queries but may be slow.
+      allow list: if (isControlRoomStaff()) || (request.query.where.citizenId == request.auth.uid) || (isStaff() && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.departmentId == request.query.where.initialDepartmentId);
 
       allow create: if isSignedIn() && isCreatingOwnComplaint();
 
