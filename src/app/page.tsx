@@ -87,26 +87,16 @@ export default function Home() {
       <LandingNav />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative w-full h-[85vh] md:h-[70vh] flex items-center justify-end text-right text-white">
-            {heroImage && (
-                 <Image
-                    src={heroImage.imageUrl}
-                    data-ai-hint={heroImage.imageHint}
-                    alt="Official Government of India Portal Background"
-                    fill
-                    className="z-0 object-cover"
-                    priority
-                />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-black/60 z-10"></div>
-            <div className="relative z-20 container px-4 md:px-6 space-y-6">
+        <section className="w-full pt-32 pb-16 md:pt-48 md:pb-24 lg:pt-56 lg:pb-32">
+          <div className="container grid gap-10 px-4 md:px-6 lg:grid-cols-2 lg:gap-16 items-center">
+            <div className="space-y-6">
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
                     Public Grievance Redressal Portal
                 </h1>
-                <p className="max-w-[700px] ml-auto text-base sm:text-lg md:text-xl text-gray-200">
+                <p className="max-w-[700px] text-muted-foreground text-base sm:text-lg md:text-xl">
                    A unified platform for citizens to report civic issues, track resolution progress, and engage with government services.
                 </p>
-                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-end">
+                <div className="flex flex-col gap-4 min-[400px]:flex-row">
                   <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Link href="/register/citizen">
                       Lodge a Complaint
@@ -120,6 +110,19 @@ export default function Home() {
                   </Button>
                 </div>
             </div>
+            <div className="relative aspect-square md:aspect-[4/3] rounded-xl overflow-hidden shadow-2xl order-first lg:order-last">
+              {heroImage && (
+                <Image
+                    src={heroImage.imageUrl}
+                    data-ai-hint={heroImage.imageHint}
+                    alt="Official Government of India Portal"
+                    fill
+                    className="object-cover"
+                    priority
+                />
+              )}
+            </div>
+          </div>
         </section>
 
         {/* Features Section */}
