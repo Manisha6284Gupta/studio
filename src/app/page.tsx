@@ -83,9 +83,10 @@ export default function Home() {
                     alt="Official Government of India Portal Background"
                     fill
                     className="z-0 object-cover"
+                    priority
                 />
             )}
-            <div className="absolute inset-0 bg-black/50 z-10"></div>
+            <div className="absolute inset-0 bg-black/30 z-10"></div>
             <div className="z-20 container px-4 md:px-6 space-y-6">
                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
                     Public Grievance Redressal Portal
