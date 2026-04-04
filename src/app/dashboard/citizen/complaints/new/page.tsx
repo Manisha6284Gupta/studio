@@ -3,8 +3,9 @@
 import { ComplaintForm } from "@/components/complaint-form";
 import * as React from "react";
 import { useUser } from "@/firebase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ComplaintLocation } from "@/lib/types";
 
 const NewComplaintSkeleton = () => (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -20,12 +21,30 @@ const NewComplaintSkeleton = () => (
 export default function NewComplaintPage() {
     const { user, isUserLoading } = useUser();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     React.useEffect(() => {
         if (!isUserLoading && !user) {
             router.replace('/login/citizen');
         }
     }, [isUserLoading, user, router]);
+
+    const initialLocation = React.useMemo(() => {
+        const lat = searchParams.get('lat');
+        const lng = searchParams.get('lng');
+
+        if (lat && lng) {
+            const latNum = parseFloat(lat);
+            const lngNum = parseFloat(lng);
+            if (!isNaN(latNum) && !isNaN(lngNum)) {
+                return {
+                    type: "Point",
+                    coordinates: [lngNum, latNum],
+                } as ComplaintLocation;
+            }
+        }
+        return undefined;
+    }, [searchParams]);
 
     if (isUserLoading || !user) {
         return <NewComplaintSkeleton />;
@@ -39,7 +58,7 @@ export default function NewComplaintPage() {
                     Please provide as much detail as possible. Use our AI assistant to help categorize your issue.
                 </p>
             </div>
-            <ComplaintForm />
+            <ComplaintForm initialLocation={initialLocation} />
         </div>
     )
 }

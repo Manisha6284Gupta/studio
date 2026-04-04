@@ -148,10 +148,10 @@ export default function CitizenComplaintsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Complaint Locations</CardTitle>
-                        <CardDescription>A map of your filtered complaints.</CardDescription>
+                        <CardDescription>A map of your filtered complaints. Click on the map to create a new one.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ComplaintsMap complaints={filteredComplaints} />
+                        <ComplaintsMap complaints={filteredComplaints} interactive={true} />
                     </CardContent>
                 </Card>
 

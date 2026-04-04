@@ -42,7 +42,7 @@ import { useUser, useFirestore, errorEmitter, useStorage } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors"
 import { addDoc, collection, serverTimestamp, doc, updateDoc, setDoc, type DocumentReference } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import type { Complaint } from "@/lib/types"
+import type { Complaint, ComplaintLocation } from "@/lib/types"
 
 const complaintFormSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters."),
@@ -73,6 +73,7 @@ type ComplaintCategorizationAndRoutingOutput = {
 
 interface ComplaintFormProps {
     complaint?: Complaint;
+    initialLocation?: ComplaintLocation;
 }
 
 function dataURLtoFile(dataurl: string, filename: string): File {
@@ -106,7 +107,7 @@ const getInitialDeadline = (deadline: any): Date | undefined => {
     return undefined;
 };
 
-export function ComplaintForm({ complaint }: ComplaintFormProps) {
+export function ComplaintForm({ complaint, initialLocation }: ComplaintFormProps) {
   const { toast } = useToast()
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -146,7 +147,7 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
       title: complaint?.title || "",
       description: complaint?.description || "",
       tags: complaint?.tags?.join(", ") || "",
-      location: complaint?.location || undefined,
+      location: initialLocation || complaint?.location || undefined,
       category: complaint?.category || "",
       priority: complaint?.priority || "",
       severity: complaint?.severity || "",
@@ -161,6 +162,14 @@ export function ComplaintForm({ complaint }: ComplaintFormProps) {
         setVideoPreview(complaint.videoUrl || null);
     }
   }, [complaint]);
+
+  useEffect(() => {
+      if (initialLocation?.coordinates) {
+          const [lng, lat] = initialLocation.coordinates;
+          getAddressFromCoordinates(lat, lng);
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialLocation]);
 
   useEffect(() => {
     return () => {
