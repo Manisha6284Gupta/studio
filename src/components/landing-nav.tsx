@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,16 +44,10 @@ const AshokaChakraLogo = () => (
 export function LandingNav() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
@@ -79,8 +73,7 @@ export function LandingNav() {
 
   return (
     <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 px-4 lg:px-6 h-20 flex items-center transition-all duration-300",
-        scrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-background/80 backdrop-blur-sm border-b border-transparent"
+        "fixed top-0 left-0 right-0 z-50 px-4 lg:px-6 h-20 flex items-center bg-background border-b"
     )}>
       <Link href="/" className="flex items-center justify-start gap-3">
         <AshokaChakraLogo />
@@ -88,7 +81,7 @@ export function LandingNav() {
             <span className="block font-headline text-2xl font-semibold text-foreground leading-tight">
               JanSevaConnect
             </span>
-            <span className="block text-sm font-medium text-muted-foreground leading-tight">
+            <span className="block text-xs font-medium text-muted-foreground leading-tight">
               सत्यमेव जयते
             </span>
         </div>
@@ -101,7 +94,7 @@ export function LandingNav() {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleLinkClick(e, link.href)}
-                className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
+                className={cn(buttonVariants({ variant: "ghost" }), "text-muted-foreground")}
             >
                 {link.label}
             </a>
